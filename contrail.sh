@@ -625,15 +625,15 @@ function build_contrail() {
                 # Agent requires another version of vrouter's headers
                 # TODO: this is probably a temporary solution and should be removed
                 # after branches are merged and everything builds from masters.
-                cd vrouter
-                git checkout semihalf/freebsd-for-tests
-                cd $CONTRAIL_SRC
+                # cd vrouter
+                # git checkout semihalf/freebsd-for-tests
+                # cd $CONTRAIL_SRC
 
                 # TODO: this is probably a temporary solution and should be removed
                 # after branches are merged and everything builds from masters.
-                cd controller
-                git chechkout semihalf/freebsd
-                cd ..
+                # cd controller
+                # git chechkout semihalf/freebsd
+                # cd ..
   
                 # Agent should build successfully now                
                 sudo scons --opt=production -i -j 10 controller/src/vnsw/agent
