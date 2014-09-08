@@ -1,0 +1,31 @@
+STACK_DIR=$(cd $(dirname $0) && pwd)
+
+LOG_DIR=$STACK_DIR/log/screens
+LOG=True
+DEBUG=True
+LOGFILE=$STACK_DIR/log/contrail.log
+LOGDAYS=1
+USE_SCREEN=True
+
+DATABASE_PASSWORD=contrail123
+RABBIT_PASSWORD=contrail123
+SERVICE_TOKEN=contrail123
+SERVICE_PASSWORD=contrail123
+ADMIN_PASSWORD=contrail123
+
+SERVICE_TIMEOUT=90
+SERVICE_HOST=localhost
+INSTALL_PROFILE=COMPUTE
+PHYSICAL_INTERFACE=em0
+
+# to get source code make it as False 
+CONTRAIL_DEFAULT_INSTALL=False
+
+# repo proto is https or (default) ssh. Leave commented for ssh
+# CONTRAIL_REPO_PROTO=https
+
+# need the following temporarily to avoid subnet name issue
+NEUTRON_PLUGIN_BRANCH=aa40d25a62e4f908b099804b255d548de2a01a7f
+
+# proto for openstack bits. Use HTTPS if git is firewalled
+GIT_BASE=https://github.com
