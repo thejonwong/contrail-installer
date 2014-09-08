@@ -615,8 +615,8 @@ function build_contrail() {
                 # TODO: this is probably a temporary solution and should be removed
                 # after branches are merged and everything builds from masters.
                 # This assumes contrail-build has ben cloned into ~/contrail-build
-                sudo rm $CONTRAIL_SRC/tools/build/rules.py
-                sudo cp ~/contrail-build/rules.py $CONTRAIL_SRC/tools/build/rules.py
+                # sudo rm $CONTRAIL_SRC/tools/build/rules.py
+                # sudo cp ~/contrail-build/rules.py $CONTRAIL_SRC/tools/build/rules.py
 
                 # let's build vrouter first
                 # TODO: -i should not be here in final version
