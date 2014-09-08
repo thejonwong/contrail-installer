@@ -74,8 +74,18 @@ function setup_root_access {
     is_package_installed sudo || install_package sudo
 
     # UEC images ``/etc/sudoers`` does not have a ``#includedir``, add one
-    sudo grep -q "^#includedir.*/etc/sudoers.d" /etc/sudoers ||
-        echo "#includedir /etc/sudoers.d" | sudo tee -a /etc/sudoers
+
+    # FreeBSD keeps sudoers and sudoers.d in different places than Linux
+    if is_freebsd; then
+      local etc_sudoers='/usr/local/etc/sudoers'
+      local etc_sudoers_d='/usr/local/etc/sudoers.d'
+    else
+      local etc_sudoers='/etc/sudoers'
+      local etc_sudoers_d='/etc/sudoers.d'
+    fi
+
+    sudo grep -q "^#includedir.*$etc_sudoers_d" $etc_sudoers ||
+        echo "#includedir $etc_sudoers_d" | sudo tee -a $etc_sudoers
 
     # Set up devstack sudoers
     TEMPFILE=`mktemp`
@@ -84,8 +94,12 @@ function setup_root_access {
     # see them by forcing PATH
     echo "Defaults:$CONTRAIL_USER secure_path=/sbin:/usr/sbin:/usr/bin:/bin:/usr/local/sbin:/usr/local/bin" >> $TEMPFILE
     chmod 0440 $TEMPFILE
-    sudo chown root:root $TEMPFILE
-    sudo mv $TEMPFILE /etc/sudoers.d/50_contrail_sh
+    if is_freebsd; then
+      sudo chown root:wheel $TEMPFILE
+    else
+      sudo chown root:root $TEMPFILE
+    fi
+    sudo mv $TEMPFILE "$etc_sudoers_d/50_contrail_sh"
 
 }
 
@@ -306,6 +320,56 @@ function download_dependencies {
             apt_get install python-kombu
             apt_get install python-sphinx
         fi
+    elif is_freebsd; then
+        sudo pkg install -y net/py-novaclient
+        # sudo pkg install -y devel/py-setuptools
+        sudo pkg install -y patch
+        sudo pkg install -y scons
+        sudo pkg install -y flex
+        sudo pkg install -y bison
+        sudo pkg install -y vim
+        sudo pkg install -y unzip
+        sudo pkg install -y autoconf
+        sudo pkg install -y automake
+        sudo pkg install -y libtool
+        sudo pkg install -y curl
+        sudo pkg install -y screen
+        sudo pkg install -y debhelper
+        sudo pkg install -y gmake
+        sudo pkg install -y libxml2
+        sudo pkg install -y libxslt
+        sudo pkg install -y expat
+        sudo pkg install -y gettext
+        # Currently (2014-09-04) gcc 4.7 is default installed with pkg install gcc,
+        # so this is the version I use to develop the script. Versions 4.8 or 4.9
+        # may not be compatibile with contrail.
+        # sudo pkg install -y gcc
+        sudo pkg install -y gcc47
+        sudo pkg install -y python2
+        sudo pkg install -y libevent2
+        sudo pkg install -y libvirt
+        sudo pkg install -y devel/py-lxml
+        sudo pkg install -y databases/py-redis
+        sudo pkg install -y apache-ant
+        sudo pkg install -y java/openjdk7
+        sudo pkg install -y log4j
+        sudo pkg install -y devel/pkgconf
+        # I did not find equivalent packages for: 
+        # uml-utilities
+        # python-software-properties
+        # python-jsonpickle
+        # chkconfig
+        # javahelper
+        # libcommons-codec-java libhttpcore-java 
+        # linux-headers-$(uname -r)
+
+        # FreeBSD keeps gcc and g++ in /usr/local/bin/gcc[version] and g++[version]
+        # which is why scons has a problem to find them. To solve the problem
+        # symlinks are created.
+        # TODO: There is probably a better, version-independent way 
+        # to deal with it without interfering with user's symlinks.
+        sudo ln -s /usr/local/bin/gcc47 /usr/local/bin/gcc
+        sudo ln -s /usr/local/bin/g++47 /usr/local/bin/g++
     else
         sudo yum -y install patch scons flex bison make vim
         sudo yum -y install expat-devel gettext-devel curl-devel
@@ -512,8 +576,18 @@ function build_contrail() {
         change_stage "started" "Dependencies"
     fi
    
-    source install_pip.sh
-    /bin/bash install_pip.sh
+    # On FreeBSD user needs to install pip manually due to conflict
+    # with pip from pkg package and one downloaded by install_pip.sh.
+    # The execution stops when install_pip.sh finds there is pip installed
+    # but cannot remove it with pkg delete, because it was not installed
+    # with pkg install. The solution is to make sure pip is installed before
+    # running contrail.sh.
+    if is_freebsd; then
+      :
+    else
+      source install_pip.sh
+      /bin/bash install_pip.sh
+    fi
         
     if [[ $(read_stage) == "Dependencies" ]]; then
         download_python_dependencies
@@ -536,6 +610,13 @@ function build_contrail() {
         fi
    
         if [[ $(read_stage) == "repo-init" ]]; then
+            # FreeBSD utilizes custom contrail-* git repos
+            # TODO: this is probably a temporary solution and should be removed
+            # after branches are merged and everything builds from masters.
+            if is_freebsd; then
+              cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifest.xml
+            fi
+
             repo sync
             [[ $? -ne 0 ]] && echo "repo sync failed" && exit
             change_stage "repo-init" "repo-sync"
@@ -550,15 +631,50 @@ function build_contrail() {
         (cd third_party/thrift-*; touch configure.ac README ChangeLog; autoreconf --force --install)
         cd $CONTRAIL_SRC
         if [ "$INSTALL_PROFILE" = "ALL" ]; then
+          if [[ $(read_stage) == "fetch-packages" ]]; then
+            sudo scons --opt=production
+            ret_val=$?
+            [[ $ret_val -ne 0 ]] && exit
+            change_stage "fetch-packages" "Build"
+          fi 
+        elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
             if [[ $(read_stage) == "fetch-packages" ]]; then
-                sudo scons --opt=production
+
+              # On FreeBSD we need to build and run vrouter and agent only.
+              if is_freebsd; then
+                # TODO: this is probably a temporary solution and should be removed
+                # after branches are merged and everything builds from masters.
+                # This assumes contrail-build has ben cloned into ~/contrail-build
+                sudo rm $CONTRAIL_SRC/tools/build/rules.py
+                sudo cp ~/contrail-build/rules.py $CONTRAIL_SRC/tools/build/rules.py
+
+                # let's build vrouter first
+                # TODO: -i should not be here in final version
+                sudo scons --opt=production -i -j 10 vrouter
+
+                # Agent requires another version of vrouter's headers
+                # TODO: this is probably a temporary solution and should be removed
+                # after branches are merged and everything builds from masters.
+                cd vrouter
+                git checkout semihalf/freebsd-for-tests
+                cd $CONTRAIL_SRC
+
+                # TODO: this is probably a temporary solution and should be removed
+                # after branches are merged and everything builds from masters.
+                cd controller
+                git chechkout semihalf/freebsd
+                cd ..
+  
+                # Agent should build successfully now                
+                sudo scons --opt=production -i -j 10 controller/src/vnsw/agent
+              else             
+                sudo scons --opt=production compute-node-install
+              fi
+
                 ret_val=$?
                 [[ $ret_val -ne 0 ]] && exit
                 change_stage "fetch-packages" "Build"
             fi
-        elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
-            if [[ $(read_stage) == "fetch-packages" ]]; then
-                sudo scons --opt=production compute-node-install
                 ret_val=$?
                 [[ $ret_val -ne 0 ]] && exit
                 change_stage "fetch-packages" "Build"          
