@@ -614,7 +614,12 @@ function build_contrail() {
             # TODO: this is probably a temporary solution and should be removed
             # after branches are merged and everything builds from masters.
             if is_freebsd; then
-              cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifest.xml
+              if [[ -f $TOP_DIR/local_manifest.xml ]]; then
+                echo "Local manifest found. Copying to $CONTRAIL_SRC/.repo/local_manifests/"
+                cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifests/local_manifest.xml
+              else
+                echo "Local manifest file was not found."
+              fi
             fi
 
             repo sync
