@@ -675,10 +675,6 @@ function build_contrail() {
                 [[ $ret_val -ne 0 ]] && exit
                 change_stage "fetch-packages" "Build"
             fi
-                ret_val=$?
-                [[ $ret_val -ne 0 ]] && exit
-                change_stage "fetch-packages" "Build"          
-            fi
         else
             echo_msg "Selected profile is neither ALL nor COMPUTE"
             exit
