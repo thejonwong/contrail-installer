@@ -249,6 +249,8 @@ function _get_package_dir() {
         pkg_dir=$FILES/apts
     elif is_fedora; then
         pkg_dir=$FILES/rpms
+    elif is_freebsd; then
+        pkg_dir=$FILES/pkg-freebsd
     elif is_suse; then
         pkg_dir=$FILES/rpms-suse
     else
@@ -405,6 +407,13 @@ GetOSVersion() {
         else
             os_CODENAME=""
         fi
+    elif [[ `uname -s` == "FreeBSD" ]]; then
+        os_VENDOR="FreeBSD"
+        os_RELEASE=$(uname -r)
+        os_UPDATE=${os_RELEASE##*.}
+        os_RELEASE=${os_RELEASE%.*}
+        os_PACKAGE="pkg"
+        os_CODENAME=""
     elif [[ -x $(which lsb_release 2>/dev/null) ]]; then
         os_VENDOR=$(lsb_release -i -s)
         os_RELEASE=$(lsb_release -r -s)
@@ -482,6 +491,9 @@ function GetDistro() {
     elif [[ "$os_VENDOR" =~ (Fedora) ]]; then
         # For Fedora, just use 'f' and the release
         DISTRO="f$os_RELEASE"
+    elif [[ "$os_VENDOR" =~ (FreeBSD) ]]; then
+        # For FreeBSD, just use 'freebsd' and the release
+        DISTRO="freebsd$os_RELEASE"
     elif [[ "$os_VENDOR" =~ (openSUSE) ]]; then
         DISTRO="opensuse-$os_RELEASE"
     elif [[ "$os_VENDOR" =~ (SUSE LINUX) ]]; then
@@ -513,6 +525,16 @@ function is_fedora {
     fi
 
     [ "$os_VENDOR" = "Fedora" ] || [ "$os_VENDOR" = "Red Hat" ] || [ "$os_VENDOR" = "CentOS" ]
+}
+
+# Determine if current distribution is FreeBSD
+# is_freebsd
+function is_freebsd {
+    if [[ -z "$os_VENDOR" ]]; then
+        GetOSVersion
+    fi
+
+    [ "$os_VENDOR" = "FreeBSD" ]
 }
 
 
@@ -973,6 +995,8 @@ function uninstall_package() {
         apt_get purge "$@"
     elif is_fedora; then
         sudo yum remove -y "$@"
+    elif is_freebsd; then
+        sudo pkg delete -y "$@"
     elif is_suse; then
         sudo zypper rm "$@"
     else
@@ -996,6 +1020,8 @@ function is_package_installed() {
         dpkg -s "$@" > /dev/null 2> /dev/null
     elif [[ "$os_PACKAGE" = "rpm" ]]; then
         rpm --quiet -q "$@"
+    elif [[ "$os_PACKAGE" = "pkg" ]]; then
+        pkg info "$@" > /dev/null 2> /dev/null
     else
         exit_distro_not_supported "finding if a package is installed"
     fi
@@ -1042,7 +1068,12 @@ function pip_install {
     # 1.1, the existing extracted build will be used and cause
     # confusing errors.  By creating unique build directories we avoid
     # this problem. See https://github.com/pypa/pip/issues/709
-    local pip_build_tmp=$(mktemp --tmpdir -d pip-build.XXXXX)
+    # FreeBSD does not understand the --tempdir flag
+    if is_freebsd; then    
+      local pip_build_tmp=$(mktemp -d /tmp/pip-build.XXXXX)
+    else
+     local pip_build_tmp=$(mktemp --tmpdir -d pip-build.XXXXX)
+    fi
 
     $SUDO_PIP PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE:-/var/cache/pip} \
         HTTP_PROXY=$http_proxy \
@@ -1066,7 +1097,7 @@ function cleanup_tmp {
 # Service wrapper to restart services
 # restart_service service-name
 function restart_service() {
-    if is_ubuntu; then
+    if is_ubuntu || is_freebsd; then
         sudo /usr/sbin/service $1 restart
     else
         sudo /sbin/service $1 restart
@@ -1379,7 +1410,7 @@ function setup_develop_no_requirements_update() {
 # Service wrapper to start services
 # start_service service-name
 function start_service() {
-    if is_ubuntu; then
+    if is_ubuntu || is_freebsd; then
         sudo /usr/sbin/service $1 start
     else
         sudo /sbin/service $1 start
@@ -1390,7 +1421,7 @@ function start_service() {
 # Service wrapper to stop services
 # stop_service service-name
 function stop_service() {
-    if is_ubuntu; then
+    if is_ubuntu || is_freebsd; then
         sudo /usr/sbin/service $1 stop
     else
         sudo /sbin/service $1 stop
