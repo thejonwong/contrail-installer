@@ -617,30 +617,12 @@ function build_contrail() {
 
               # On FreeBSD we need to build and run vrouter and agent only.
               if is_freebsd; then
-                # TODO: this is probably a temporary solution and should be removed
-                # after branches are merged and everything builds from masters.
-                # This assumes contrail-build has ben cloned into ~/contrail-build
-                # sudo rm $CONTRAIL_SRC/tools/build/rules.py
-                # sudo cp ~/contrail-build/rules.py $CONTRAIL_SRC/tools/build/rules.py
-
                 # let's build vrouter first
                 # TODO: -i should not be here in final version
                 sudo scons --opt=production -i -j 10 vrouter
-
-                # Agent requires another version of vrouter's headers
-                # TODO: this is probably a temporary solution and should be removed
-                # after branches are merged and everything builds from masters.
-                # cd vrouter
-                # git checkout semihalf/freebsd-for-tests
-                # cd $CONTRAIL_SRC
-
-                # TODO: this is probably a temporary solution and should be removed
-                # after branches are merged and everything builds from masters.
-                # cd controller
-                # git chechkout semihalf/freebsd
-                # cd ..
   
-                # Agent should build successfully now                
+                # Agent should build successfully now
+                # TODO: -i should not be here in final version          
                 sudo scons --opt=production -i -j 10 controller/src/vnsw/agent
               else             
                 sudo scons --opt=production compute-node-install
