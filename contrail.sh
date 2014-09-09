@@ -335,6 +335,7 @@ function download_dependencies {
         sudo pkg install -y log4j
         sudo pkg install -y devel/pkgconf
         sudo pkg install -y gnupg
+        sudo pkg install -y protobuf
         # I did not find equivalent packages for: 
         # uml-utilities
         # python-software-properties
@@ -598,8 +599,8 @@ function build_contrail() {
             # after branches are merged and everything builds from masters.
             if is_freebsd; then
               if [[ -f $TOP_DIR/local_manifest.xml ]]; then
-                echo "Local manifest found. Copying to $CONTRAIL_SRC/.repo/local_manifests/"
-                cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifests/local_manifest.xml
+                echo "Local manifest found. Copying to $CONTRAIL_SRC/.repo/local_manifests"
+                cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifests
               else
                 echo "Local manifest file was not found."
               fi
