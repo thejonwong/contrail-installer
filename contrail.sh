@@ -9,7 +9,19 @@ if [[ $EUID -eq 0 ]]; then
     exit 1
 fi
 
-ENABLED_SERVICES=redis,cass,zk,ifmap,disco,apiSrv,schema,svc-mon,control,collector,analytics-api,query-engine,agent,redis-w,ui-jobs,ui-webs
+while true; do
+  if [[ ! -f localrc ]]; then
+      read -p "There is no localrc file present. Do you wish to continue anyway? (y/n)" yn
+      case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) exit 1;;
+          * ) echo "Please answer yes or no.";;
+      esac
+  fi
+done
+    
+
+ENABLED_SERVICES=redis,cass,zk,ifmap,disco,apiSrv,schema,svc-mon,control,redis-u,redis-q,vizd,opserver,qed,agent,redis-w,ui-jobs,ui-webs
 
 # Save trace setting
 MY_XTRACE=$(set +o | grep xtrace)
