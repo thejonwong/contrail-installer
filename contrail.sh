@@ -334,6 +334,7 @@ function download_dependencies {
         sudo pkg install -y java/openjdk7
         sudo pkg install -y log4j
         sudo pkg install -y devel/pkgconf
+        sudo pkg install -y gnupg
         # I did not find equivalent packages for: 
         # uml-utilities
         # python-software-properties
