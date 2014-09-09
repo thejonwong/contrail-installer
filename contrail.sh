@@ -633,11 +633,11 @@ function build_contrail() {
               if is_freebsd; then
                 # let's build vrouter first
                 # TODO: -i should not be here in final version
-                sudo scons --opt=production -i -j 10 vrouter
+                sudo scons -i -j 10 vrouter
   
                 # Agent should build successfully now
                 # TODO: -i should not be here in final version          
-                sudo scons --opt=production -i -j 10 controller/src/vnsw/agent
+                sudo scons -i -j 10 controller/src/vnsw/agent
               else             
                 sudo scons --opt=production compute-node-install
               fi
