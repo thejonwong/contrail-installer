@@ -8,11 +8,25 @@ if [[ $EUID -eq 0 ]]; then
     echo "Cut it out."
     exit 1
 fi
+
+while true; do
+  if [[ ! -f localrc ]]; then
+      read -p "There is no localrc file present. Do you wish to continue anyway? (y/n)" yn
+      case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) exit 1;;
+          * ) echo "Please answer yes or no.";;
+      esac
+  fi
+done
+    
+
 if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
     ENABLED_SERVICES=redis,cass,zk,ifmap,disco,apiSrv,schema,svc-mon,control,collector,analytics-api,query-engine,agent,redis-w,ui-jobs,ui-webs
 else
     ENABLED_SERVICES=redis,cass,zk,ifmap,disco,apiSrv,schema,svc-mon,control,collector,analytics-api,query-engine,agent,redis-w
 fi
+
 # Save trace setting
 TOP_DIR=`pwd`
 CONTRAIL_USER=$(whoami)
@@ -1328,5 +1342,3 @@ else
     # Force all output to stdout now
     exec 1>&3
 fi
-
-
