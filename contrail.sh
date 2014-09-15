@@ -645,9 +645,28 @@ function build_contrail() {
                 sudo scons --opt=production compute-node-install
               fi
 
-                ret_val=$?
+              ret_val=$?
+              
+              # [[ $ret_val -ne 0 ]] && exit
+              # change_stage "fetch-packages" "Build"
+              # TODO: for debugging purposes we ignore non-zero exit code
+              if [[ $ret_val -ne 0 && is_freebsd ]]; then
+                while true; do
+                  read -p "Scons finished with ret_val=$ret_val. Do you wish to continue anyway? (y/n)" yn
+                  case $yn in
+                    [Yy]* ) break;;
+                    [Nn]* ) exit 1;;
+                    * ) echo "Please answer yes or no.";;
+                  esac
+                done
+              fi
+              
+              if [[ ! is_freebsd ]]; then
                 [[ $ret_val -ne 0 ]] && exit
-                change_stage "fetch-packages" "Build"
+              fi
+              
+              change_stage "fetch-packages" "Build"
+              
             fi
         else
             echo "Selected profile is neither ALL nor COMPUTE"
