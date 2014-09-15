@@ -1,12 +1,8 @@
 <manifest>
 <remote name="semihalf" fetch="ssh://git@github.com/Semihalf/"/>
 <remove-project name="contrail-controller"/>
-<project name="contrail-controller" remote="semihalf" path="controller" revision="dev-upstream"/>
+<project name="contrail-controller" remote="semihalf" path="controller" revision="review"/>
 <remove-project name="contrail-vrouter"/>
-<project name="contrail-vrouter" remote="semihalf" path="vrouter" revision="dev-upstream"/>
-<remove-project name="contrail-sandesh"/>
-<project name="contrail-sandesh" remote="semihalf" path="tools/sandesh" revision="dev-upstream"/>
-<remove-project name="contrail-third-party"/>
-<project name="contrail-third-party" remote="semihalf" path="third_party" revision="dev-upstream"/>
+<project name="contrail-vrouter" remote="semihalf" path="vrouter" revision="freebsd-for-tests"/>
 
 </manifest>
