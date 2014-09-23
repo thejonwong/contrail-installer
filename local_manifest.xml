@@ -1,8 +1,6 @@
 <manifest>
 <remote name="semihalf" fetch="ssh://git@github.com/Semihalf/"/>
-<remove-project name="contrail-controller"/>
-<project name="contrail-controller" remote="semihalf" path="controller" revision="review"/>
 <remove-project name="contrail-vrouter"/>
-<project name="contrail-vrouter" remote="semihalf" path="vrouter" revision="freebsd-for-tests"/>
+<project name="contrail-vrouter" remote="semihalf" path="vrouter" revision="dev-woz-post-review"/>
 
 </manifest>
