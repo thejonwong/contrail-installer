@@ -636,7 +636,9 @@ function build_contrail() {
               if is_freebsd; then
                 # let's build vrouter first
                 # TODO: -i should not be here in final version
+                # and utils should be built with vrouter, not separately.
                 sudo scons -i -j 10 vrouter
+                sudo scons -i vrouter/utils
   
                 # Agent should build successfully now
                 # TODO: -i should not be here in final version          
