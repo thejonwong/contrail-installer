@@ -769,7 +769,7 @@ function install_contrail() {
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
             if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-              #TODO: I think it should be in build_contrail()
+              # TODO: I think it should be in build_contrail()
               if is_freebsd; then
                 sudo scons openstack/nova_contrail_vif
               else
@@ -781,7 +781,9 @@ function install_contrail() {
 
                 # install contrail modules
                 echo "Installing contrail modules"
-                pip_install --upgrade $(find $CONTRAIL_SRC/build/production -name "*.tar.gz" -print)
+                # TODO: for debugging purposes production -> debug
+                # pip_install --upgrade $(find $CONTRAIL_SRC/build/production -name "*.tar.gz" -print)
+                pip_install --upgrade $(find $CONTRAIL_SRC/build/debug -name "*.tar.gz" -print)
 
                 # install VIF driver
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
