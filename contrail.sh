@@ -770,12 +770,12 @@ function install_contrail() {
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
             if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
+              #TODO: I think it should be in build_contrail()
               if is_freebsd; then
-                # TODO: something should happen here.
-                # Probably we need to install VIF driver and contrail modules.
-                :
+                sudo scons openstack/nova_contrail_vif
               else
                 sudo scons --opt=production compute-node-install
+              fi
                 ret_val=$?
                 [[ $ret_val -ne 0 ]] && exit
                 cd ${contrail_cwd}
@@ -786,7 +786,6 @@ function install_contrail() {
 
                 # install VIF driver
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
-              fi
             else
 		cd ${contrail_cwd}		
 		# install contrail modules
