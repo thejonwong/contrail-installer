@@ -637,12 +637,15 @@ function build_contrail() {
                 # let's build vrouter first
                 # TODO: -i should not be here in final version
                 # and utils should be built with vrouter, not separately.
-                sudo scons -i -j 10 vrouter
+                sudo scons -i vrouter
                 sudo scons -i vrouter/utils
   
                 # Agent should build successfully now
-                # TODO: -i should not be here in final version          
-                sudo scons -i -j 10 controller/src/vnsw/agent
+                # TODO: -i should not be here in final version
+                # and contrail-vrouter-agent should be built with controller,
+                # not separately.
+                sudo scons -i controller/src/vnsw/agent
+                sudo scons -i controller/src/vnsv/agent/contrail
               else             
                 sudo scons --opt=production compute-node-install
               fi
@@ -767,6 +770,11 @@ function install_contrail() {
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
             if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
+              if is_freebsd; then
+                # TODO: something should happen here.
+                # Probably we need to install VIF driver and contrail modules.
+                :
+              else
                 sudo scons --opt=production compute-node-install
                 ret_val=$?
                 [[ $ret_val -ne 0 ]] && exit
@@ -778,7 +786,7 @@ function install_contrail() {
 
                 # install VIF driver
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
-
+              fi
             else
 		cd ${contrail_cwd}		
 		# install contrail modules
