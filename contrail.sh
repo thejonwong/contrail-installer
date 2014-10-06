@@ -676,7 +676,7 @@ function build_contrail() {
                 # and contrail-vrouter-agent should be built with controller,
                 # not separately.
                 sudo scons -i controller/src/vnsw/agent
-                sudo scons -i controller/src/vnsv/agent/contrail
+                sudo scons -i controller/src/vnsw/agent/contrail
               else             
                 sudo scons --opt=production compute-node-install
               fi
