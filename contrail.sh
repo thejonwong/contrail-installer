@@ -10,16 +10,16 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 if [[ ! -f localrc ]]; then
-  while true; do
-      read -p "There is no localrc file present. Do you wish to continue anyway? (y/n)" yn
-      case $yn in
-          [Yy]* ) break;;
-          [Nn]* ) exit 1;;
-          * ) echo "Please answer yes or no.";;
-      esac
-  done
+    while true; do
+        read -p "There is no localrc file present. Do you wish to continue anyway? (y/n)" yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
 fi
-    
+
 
 if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
     ENABLED_SERVICES=redis,cass,zk,ifmap,disco,apiSrv,schema,svc-mon,control,collector,analytics-api,query-engine,agent,redis-w,ui-jobs,ui-webs
@@ -91,11 +91,11 @@ function setup_root_access {
 
     # FreeBSD keeps sudoers and sudoers.d in different places than Linux
     if is_freebsd; then
-      local etc_sudoers='/usr/local/etc/sudoers'
-      local etc_sudoers_d='/usr/local/etc/sudoers.d'
+        local etc_sudoers='/usr/local/etc/sudoers'
+        local etc_sudoers_d='/usr/local/etc/sudoers.d'
     else
-      local etc_sudoers='/etc/sudoers'
-      local etc_sudoers_d='/etc/sudoers.d'
+        local etc_sudoers='/etc/sudoers'
+        local etc_sudoers_d='/etc/sudoers.d'
     fi
 
     sudo grep -q "^#includedir.*$etc_sudoers_d" $etc_sudoers ||
@@ -109,9 +109,9 @@ function setup_root_access {
     echo "Defaults:$CONTRAIL_USER secure_path=/sbin:/usr/sbin:/usr/bin:/bin:/usr/local/sbin:/usr/local/bin" >> $TEMPFILE
     chmod 0440 $TEMPFILE
     if is_freebsd; then
-      sudo chown root:wheel $TEMPFILE
+        sudo chown root:wheel $TEMPFILE
     else
-      sudo chown root:root $TEMPFILE
+        sudo chown root:root $TEMPFILE
     fi
     sudo mv $TEMPFILE "$etc_sudoers_d/50_contrail_sh"
 
@@ -371,19 +371,19 @@ function download_dependencies {
         sudo pkg install -y gnupg
         sudo pkg install -y protobuf
         sudo pkg install -y netmask
-        # I did not find equivalent packages for: 
+        # I did not find equivalent packages for:
         # uml-utilities
         # python-software-properties
         # python-jsonpickle
         # chkconfig
         # javahelper
-        # libcommons-codec-java libhttpcore-java 
+        # libcommons-codec-java libhttpcore-java
         # linux-headers-$(uname -r)
 
         # FreeBSD keeps gcc and g++ in /usr/local/bin/gcc[version] and g++[version]
         # which is why scons has a problem to find them. To solve the problem
         # symlinks are created.
-        # TODO(woz@semihalf.com): There is probably a better, version-independent way 
+        # TODO(woz@semihalf.com): There is probably a better, version-independent way
         # to deal with it without interfering with user's symlinks.
         sudo ln -s /usr/local/bin/gcc47 /usr/local/bin/gcc
         sudo ln -s /usr/local/bin/g++47 /usr/local/bin/g++
@@ -600,10 +600,10 @@ function build_contrail() {
     # with pkg install. The solution is to make sure pip is installed before
     # running contrail.sh.
     if is_freebsd; then
-      :
+        :
     else
-      source install_pip.sh
-      /bin/bash install_pip.sh
+        source install_pip.sh
+        /bin/bash install_pip.sh
     fi
         
     if [[ $(read_stage) == "Dependencies" ]]; then
@@ -631,14 +631,14 @@ function build_contrail() {
             # TODO(woz@semihalf.com): this is probably a temporary solution and should be removed
             # after branches are merged and everything builds from masters.
             if is_freebsd; then
-              if [[ -f $TOP_DIR/local_manifest.xml ]]; then
-                # Log says local_manifest.xml is deprecated and suggest another localization
-                # which is simply ignored.
-                echo "Local manifest found. Copying to $CONTRAIL_SRC/.repo/local_manifest.xml"
-                cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifest.xml
-              else
-                echo "Local manifest file was not found."
-              fi
+                if [[ -f $TOP_DIR/local_manifest.xml ]]; then
+                    # Log says local_manifest.xml is deprecated and suggest another localization
+                    # which is simply ignored.
+                    echo "Local manifest found. Copying to $CONTRAIL_SRC/.repo/local_manifest.xml"
+                    cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifest.xml
+                else
+                    echo "Local manifest file was not found."
+                fi
             fi
 
             repo sync
@@ -655,52 +655,52 @@ function build_contrail() {
         (cd third_party/thrift-*; touch configure.ac README ChangeLog; autoreconf --force --install)
         cd $CONTRAIL_SRC
         if [ "$INSTALL_PROFILE" = "ALL" ]; then
-          if [[ $(read_stage) == "fetch-packages" ]]; then
-            sudo scons --opt=production
-            ret_val=$?
-            [[ $ret_val -ne 0 ]] && exit
-            change_stage "fetch-packages" "Build"
-          fi 
+            if [[ $(read_stage) == "fetch-packages" ]]; then
+                sudo scons --opt=production
+                ret_val=$?
+                [[ $ret_val -ne 0 ]] && exit
+                change_stage "fetch-packages" "Build"
+            fi
         elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
             if [[ $(read_stage) == "fetch-packages" ]]; then
 
-              # On FreeBSD we need to build and run vrouter and agent only.
-              if is_freebsd; then
-                # let's build vrouter first
-                # TODO(woz@semihalf.com): -i should not be here in final version
-                # and utils should be built with vrouter, not separately.
-                sudo scons -i vrouter
-                sudo scons -i vrouter/utils
-  
-                # Agent should build successfully now
-                # TODO(woz@semihalf.com): -i should not be here in final version.
-                sudo scons -i controller/src/vnsw/agent
-              else             
-                sudo scons --opt=production compute-node-install
-              fi
+                # On FreeBSD we need to build and run vrouter and agent only.
+                if is_freebsd; then
+                    # let's build vrouter first
+                    # TODO(woz@semihalf.com): -i should not be here in final version
+                    # and utils should be built with vrouter, not separately.
+                    sudo scons -i vrouter
+                    sudo scons -i vrouter/utils
 
-              ret_val=$?
-              
-              # [[ $ret_val -ne 0 ]] && exit
-              # change_stage "fetch-packages" "Build"
-              # TODO(woz@semihalf.com): for debugging purposes we ignore non-zero exit code
-              if [[ $ret_val -ne 0 && is_freebsd ]]; then
-                while true; do
-                  read -p "Scons finished with ret_val=$ret_val. Do you wish to continue anyway? (y/n)" yn
-                  case $yn in
-                    [Yy]* ) break;;
-                    [Nn]* ) exit 1;;
-                    * ) echo "Please answer yes or no.";;
-                  esac
-                done
-              fi
-              
-              if [[ ! is_freebsd ]]; then
-                [[ $ret_val -ne 0 ]] && exit
-              fi
-              
-              change_stage "fetch-packages" "Build"
-              
+                    # Agent should build successfully now
+                    # TODO(woz@semihalf.com): -i should not be here in final version.
+                    sudo scons -i controller/src/vnsw/agent
+                else   
+                    sudo scons --opt=production compute-node-install
+                fi
+
+                ret_val=$?
+
+                # [[ $ret_val -ne 0 ]] && exit
+                # change_stage "fetch-packages" "Build"
+                # TODO(woz@semihalf.com): for debugging purposes we ignore non-zero exit code
+                if [[ $ret_val -ne 0 && is_freebsd ]]; then
+                    while true; do
+                        read -p "Scons finished with ret_val=$ret_val. Do you wish to continue anyway? (y/n)" yn
+                        case $yn in
+                            [Yy]* ) break;;
+                            [Nn]* ) exit 1;;
+                            * ) echo "Please answer yes or no.";;
+                        esac
+                    done
+                fi
+
+                if [[ ! is_freebsd ]]; then
+                    [[ $ret_val -ne 0 ]] && exit
+                fi
+
+                change_stage "fetch-packages" "Build"
+
             fi
         else
             echo_msg "Selected profile is neither ALL nor COMPUTE"
@@ -718,12 +718,11 @@ function build_contrail() {
     fi 
 	
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
-            download_redis
-            download_node_for_npm
+        download_redis
+        download_node_for_npm
     fi
     echo_summary "-----------------------BUILD PHASE ENDED---------------------------"
 
- 
 }
 
 function install_contrail() {
@@ -750,11 +749,11 @@ function install_contrail() {
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
                 # install Neutron OpenContrail plugin
                 pip_install $CONTRAIL_SRC/openstack/neutron_plugin/
-  
+
                 # install neutron patch after VNC api is built and installed
                 # test_install_neutron_patch
 
-   
+
                 # get ifmap
                 #download_ifmap_irond
                 cd $CONTRAIL_SRC
@@ -763,7 +762,7 @@ function install_contrail() {
                 sudo cp $CONTRAIL_SRC/build/packages/ifmap-server/build/irond.jar $CONTRAIL_SRC/build/packages/ifmap-server  
                 # ncclient
                 download_ncclient
- 
+
                 contrail_cwd=$(pwd)
     		cd $CONTRAIL_SRC
     		python contrail-webui-third-party/fetch_packages.py
@@ -811,12 +810,13 @@ function install_contrail() {
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
             if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-              # TODO(woz@semihalf.com): I think it should be in build_contrail()
-              if is_freebsd; then
-                sudo scons openstack/nova_contrail_vif
-              else
-                sudo scons --opt=production compute-node-install
-              fi
+                # TODO(woz@semihalf.com): I think it should be in build_contrail()
+                if is_freebsd; then
+                    sudo scons openstack/nova_contrail_vif
+                else
+                    sudo scons --opt=production compute-node-install
+                fi
+
                 ret_val=$?
                 [[ $ret_val -ne 0 ]] && exit
                 cd ${contrail_cwd}
@@ -828,15 +828,15 @@ function install_contrail() {
                 # install VIF driver
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
             else
-		cd ${contrail_cwd}		
-		# install contrail modules
+            		cd ${contrail_cwd}
+            		# install contrail modules
                 echo "Installing contrail modules"
                 apt_get install contrail-config contrail-lib contrail-utils
                 apt_get install contrail-vrouter-utils contrail-vrouter-agent 
                 apt_get install contrail-vrouter-source contrail-vrouter-dkms contrail-nova-driver  
             fi
 
-            change_stage "Build" "install"         
+            change_stage "Build" "install"  
         fi
     else
         echo_msg "Selected profile is neither ALL nor COMPUTE"

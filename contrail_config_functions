@@ -407,6 +407,7 @@ function get_if_mtu()
     if [[ $mtu -eq 1500 ]]; then
         mtu=''
     fi
+
     echo $mtu
 }
 
@@ -421,7 +422,7 @@ function find_gateway()
 function get_Mask()
 {
     interface=$1
-    
+
     # ifconfig on FreeBSD shows netmask in hex 
     if is_freebsd; then
         hex_mask=$(ifconfig $interface|grep 'netmask'|awk '{print $4}')
@@ -429,7 +430,7 @@ function get_Mask()
     else
         mask=$(ifconfig $interface|grep Mask | awk 'BEGIN{FS=OFS="Mask"}{print $2}'|awk 'BEGIN{FS=OFS=":"}{print $2}')
     fi
-    
+
     echo $mask
 
 }
@@ -437,11 +438,13 @@ function get_Mask()
 function get_management_ip()
 {
     interface=$1
+
     if is_freebsd; then
         management_ip=$(ifconfig $interface|grep -e 'inet '|awk '{print $2}')
     else
         management_ip=$(ifconfig $interface|grep -e addr| awk 'BEGIN{FS=OFS="net addr"}{print $2}'|awk '{print $1}'|awk 'BEGIN{FS=OFS=":"}{print $2}')
     fi     
+
     echo $management_ip
 
 }
