@@ -370,6 +370,7 @@ function download_dependencies {
         sudo pkg install -y devel/pkgconf
         sudo pkg install -y gnupg
         sudo pkg install -y protobuf
+        sudo pkg install -y netmask
         # I did not find equivalent packages for: 
         # uml-utilities
         # python-software-properties
