@@ -345,8 +345,8 @@ function remove_spaces()
 {
     file=$1
     section=$2
-    sed -i "s/\[$section\]//g" $file
-    sed -i "s/ //g" $file
+    sed -i -e "s/\[$section\]//g" $file
+    sed -i -e "s/ //g" $file
 
 }
 
@@ -397,7 +397,13 @@ function get_if_mtu()
 {
     mtu=''
     interface=$1 
-    mtu=$(ifconfig $interface|grep MTU | awk 'BEGIN{FS=OFS="MTU"}{print $2}'|awk 'BEGIN{FS=OFS=":"}{print $2}'|awk '{print $1}')
+    
+    if is_freebsd; then
+        mtu=$(ifconfig $interface|grep mtu|awk '{print $6}')
+    else
+        mtu=$(ifconfig $interface|grep MTU | awk 'BEGIN{FS=OFS="MTU"}{print $2}'|awk 'BEGIN{FS=OFS=":"}{print $2}'|awk '{print $1}')
+    fi
+    
     if [[ $mtu -eq 1500 ]]; then
         mtu=''
     fi
@@ -407,7 +413,7 @@ function get_if_mtu()
 function find_gateway()
 {
     interface=$1
-    gateway=$(netstat -rn | grep ^"0.0.0.0" | grep $interface | awk '{ print $2 }')
+    gateway=$(netstat -rn | grep "^"0.0.0.0"\|"default"" | grep $interface | awk '{ print $2 }')
     echo $gateway
 
 }
@@ -415,7 +421,15 @@ function find_gateway()
 function get_Mask()
 {
     interface=$1
-    mask=$(ifconfig $interface|grep Mask | awk 'BEGIN{FS=OFS="Mask"}{print $2}'|awk 'BEGIN{FS=OFS=":"}{print $2}')
+    
+    # ifconfig on FreeBSD shows netmask in hex 
+    if is_freebsd; then
+        hex_mask=$(ifconfig $interface|grep 'netmask'|awk '{print $4}')
+        mask=$(netmask $hex_mask -c | awk 'BEGIN{FS="/"}{print $1}')
+    else
+        mask=$(ifconfig $interface|grep Mask | awk 'BEGIN{FS=OFS="Mask"}{print $2}'|awk 'BEGIN{FS=OFS=":"}{print $2}')
+    fi
+    
     echo $mask
 
 }
@@ -423,10 +437,15 @@ function get_Mask()
 function get_management_ip()
 {
     interface=$1
-    management_ip=$(ifconfig $interface|grep -e addr| awk 'BEGIN{FS=OFS="net addr"}{print $2}'|awk '{print $1}'|awk 'BEGIN{FS=OFS=":"}{print $2}')
+    if is_freebsd; then
+        management_ip=$(ifconfig $interface|grep -e 'inet '|awk '{print $2}')
+    else
+        management_ip=$(ifconfig $interface|grep -e addr| awk 'BEGIN{FS=OFS="net addr"}{print $2}'|awk '{print $1}'|awk 'BEGIN{FS=OFS=":"}{print $2}')
+    fi     
     echo $management_ip
 
 }
+
 function get_intf_ip()
 {
     interface=$1
@@ -449,7 +468,13 @@ function get_device_by_ip()
 {
     ip=$1
     interface=""
-    interface_list=$(sudo netstat -i | awk '{print $1}'|sed -n '1,2!p')
+
+    if is_freebsd; do
+        interface_list=$(ifconfig -l)
+    else
+        interface_list=$(sudo netstat -i | awk '{print $1}'|sed -n '1,2!p')
+    fi
+
     for inf in ${interface_list[@]}
     do
         if [[ $inf == "pkt1" ]]; then
@@ -469,7 +494,8 @@ function get_device_by_ip()
         echo "$ip not configured"
     fi
    
- }
+}
+ 
 function _rewrite_ifcfg_file()
 {
     filename=$1
@@ -543,10 +569,15 @@ function migrate_routes()
 {
    :
 }
+
 function get_Mac()
 {
     interface=$1
-    mac=$(ifconfig $interface|grep HWaddr | awk '{print $5}')
+    if is_freebsd; then
+        mac=$(ifconfig $interface|grep 'ether'|awk '{print $2}')
+    else
+        mac=$(ifconfig $interface|grep HWaddr | awk '{print $5}')
+    fi
     echo $mac
 
 }
@@ -707,14 +738,16 @@ function fixup_config_files()
         $SERVICE_TOKEN > /etc/contrail/service.token
     fi
     
-    # Disable selinux
-    sudo sed 's/SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config > config.new
-    sudo mv config.new /etc/selinux/config
-    setenforce 0
+    if !is_freebsd; then
+        # Disable selinux
+        sudo sed 's/SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config > config.new
+        sudo mv config.new /etc/selinux/config
+        setenforce 0
 
-    # Disable iptables      
-    sudo chkconfig iptables off
-    sudo iptables --flush 
+        # Disable iptables      
+        sudo chkconfig iptables off
+        sudo iptables --flush 
+    fi
     
     sudo rm /etc/contrail/ctrl-details
     echo 'SERVICE_TOKEN='$SERVICE_TOKEN >> "/etc/contrail/ctrl-details"
@@ -799,5 +832,8 @@ function fixup_config_files()
         #migrate_routes $dev
         :
     fi
-    sudo chkconfig network on 
+    
+    if !is_freebsd; then
+        sudo chkconfig network on 
+    fi
 }
