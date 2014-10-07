@@ -349,7 +349,7 @@ function download_dependencies {
         # FreeBSD keeps gcc and g++ in /usr/local/bin/gcc[version] and g++[version]
         # which is why scons has a problem to find them. To solve the problem
         # symlinks are created.
-        # TODO: There is probably a better, version-independent way 
+        # TODO(woz@semihalf.com): There is probably a better, version-independent way 
         # to deal with it without interfering with user's symlinks.
         sudo ln -s /usr/local/bin/gcc47 /usr/local/bin/gcc
         sudo ln -s /usr/local/bin/g++47 /usr/local/bin/g++
@@ -596,7 +596,7 @@ function build_contrail() {
    
         if [[ $(read_stage) == "repo-init" ]]; then
             # FreeBSD utilizes custom contrail-* git repos
-            # TODO: this is probably a temporary solution and should be removed
+            # TODO(woz@semihalf.com): this is probably a temporary solution and should be removed
             # after branches are merged and everything builds from masters.
             if is_freebsd; then
               if [[ -f $TOP_DIR/local_manifest.xml ]]; then
@@ -635,13 +635,13 @@ function build_contrail() {
               # On FreeBSD we need to build and run vrouter and agent only.
               if is_freebsd; then
                 # let's build vrouter first
-                # TODO: -i should not be here in final version
+                # TODO(woz@semihalf.com): -i should not be here in final version
                 # and utils should be built with vrouter, not separately.
                 sudo scons -i vrouter
                 sudo scons -i vrouter/utils
   
                 # Agent should build successfully now
-                # TODO: -i should not be here in final version.
+                # TODO(woz@semihalf.com): -i should not be here in final version.
                 sudo scons -i controller/src/vnsw/agent
               else             
                 sudo scons --opt=production compute-node-install
@@ -651,7 +651,7 @@ function build_contrail() {
               
               # [[ $ret_val -ne 0 ]] && exit
               # change_stage "fetch-packages" "Build"
-              # TODO: for debugging purposes we ignore non-zero exit code
+              # TODO(woz@semihalf.com): for debugging purposes we ignore non-zero exit code
               if [[ $ret_val -ne 0 && is_freebsd ]]; then
                 while true; do
                   read -p "Scons finished with ret_val=$ret_val. Do you wish to continue anyway? (y/n)" yn
@@ -767,7 +767,7 @@ function install_contrail() {
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
             if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-              # TODO: I think it should be in build_contrail()
+              # TODO(woz@semihalf.com): I think it should be in build_contrail()
               if is_freebsd; then
                 sudo scons openstack/nova_contrail_vif
               else
@@ -779,7 +779,7 @@ function install_contrail() {
 
                 # install contrail modules
                 echo "Installing contrail modules"
-                # TODO: for debugging purposes production -> debug
+                # TODO(woz@semihalf.com): for debugging purposes production -> debug
                 # pip_install --upgrade $(find $CONTRAIL_SRC/build/production -name "*.tar.gz" -print)
                 pip_install --upgrade $(find $CONTRAIL_SRC/build/debug -name "*.tar.gz" -print)
 
