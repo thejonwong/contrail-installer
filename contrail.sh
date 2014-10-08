@@ -89,7 +89,7 @@ function setup_root_access {
 
     # UEC images ``/etc/sudoers`` does not have a ``#includedir``, add one
 
-    # FreeBSD keeps sudoers and sudoers.d in different places than Linux
+    # (woz@semihalf.com): FreeBSD keeps sudoers and sudoers.d in different places than Linux
     if is_freebsd; then
         local etc_sudoers='/usr/local/etc/sudoers'
         local etc_sudoers_d='/usr/local/etc/sudoers.d'
@@ -336,7 +336,6 @@ function download_dependencies {
         fi
     elif is_freebsd; then
         install_package -y net/py-novaclient
-        # install_package -y devel/py-setuptools
         install_package -y patch
         install_package -y scons
         install_package -y flex
@@ -354,7 +353,7 @@ function download_dependencies {
         install_package -y libxslt
         install_package -y expat
         install_package -y gettext
-        # Currently (2014-09-04) gcc 4.7 is default installed with pkg install gcc,
+        # (woz@semihalf.com): Currently (2014-09-04) gcc 4.7 is default installed with pkg install gcc,
         # so this is the version I use to develop the script. Versions 4.8 or 4.9
         # may not be compatibile with contrail.
         # install_package -y gcc
@@ -371,7 +370,7 @@ function download_dependencies {
         install_package -y gnupg
         install_package -y protobuf
         install_package -y netmask
-        # I did not find equivalent packages for:
+        # (woz@semihalf.com): I did not find equivalent packages for:
         # uml-utilities
         # python-software-properties
         # python-jsonpickle
@@ -380,10 +379,9 @@ function download_dependencies {
         # libcommons-codec-java libhttpcore-java
         # linux-headers-$(uname -r)
 
-        # FreeBSD keeps gcc and g++ in /usr/local/bin/gcc[version] and g++[version]
+        # (woz@semihalf.com): FreeBSD keeps gcc and g++ in /usr/local/bin/gcc[version] and g++[version]
         # which is why scons has a problem to find them. To solve the problem
-        # symlinks are created.
-        # TODO(woz@semihalf.com): There is probably a better, version-independent way
+        # symlinks are created. There is probably a better, version-independent way
         # to deal with it without interfering with user's symlinks.
         sudo ln -s /usr/local/bin/gcc47 /usr/local/bin/gcc
         sudo ln -s /usr/local/bin/g++47 /usr/local/bin/g++
@@ -593,7 +591,7 @@ function build_contrail() {
         change_stage "started" "Dependencies"
     fi
    
-    # On FreeBSD user needs to install pip manually due to conflict
+    # (woz@semihalf.com): On FreeBSD user needs to install pip manually due to conflict
     # with pip from pkg package and one downloaded by install_pip.sh.
     # The execution stops when install_pip.sh finds there is pip installed
     # but cannot remove it with pkg delete, because it was not installed
@@ -627,12 +625,11 @@ function build_contrail() {
         fi
    
         if [[ $(read_stage) == "repo-init" ]]; then
-            # FreeBSD utilizes custom contrail-* git repos
-            # TODO(woz@semihalf.com): this is probably a temporary solution and should be removed
+            # (woz@semihalf.com): this is probably a temporary solution and should be removed
             # after branches are merged and everything builds from masters.
             if is_freebsd; then
                 if [[ -f $TOP_DIR/local_manifest.xml ]]; then
-                    # Log says local_manifest.xml is deprecated and suggest another localization
+                    # (woz@semihalf.com): Log says local_manifest.xml is deprecated and suggest another localization
                     # which is simply ignored.
                     echo "Local manifest found. Copying to $CONTRAIL_SRC/.repo/local_manifest.xml"
                     cp $TOP_DIR/local_manifest.xml $CONTRAIL_SRC/.repo/local_manifest.xml
@@ -664,16 +661,14 @@ function build_contrail() {
         elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
             if [[ $(read_stage) == "fetch-packages" ]]; then
 
-                # On FreeBSD we need to build and run vrouter and agent only.
+                # (woz@semihalf.com): On FreeBSD we need to build and run vrouter and agent only.
                 if is_freebsd; then
-                    # let's build vrouter first
-                    # TODO(woz@semihalf.com): -i should not be here in final version
+                    # (woz@semihalf.com): -i should not be here in final version
                     # and utils should be built with vrouter, not separately.
                     sudo scons -i vrouter
                     sudo scons -i vrouter/utils
 
-                    # Agent should build successfully now
-                    # TODO(woz@semihalf.com): -i should not be here in final version.
+                    # (woz@semihalf.com): -i should not be here in final version.
                     sudo scons -i controller/src/vnsw/agent
                 else   
                     sudo scons --opt=production compute-node-install
@@ -681,9 +676,9 @@ function build_contrail() {
 
                 ret_val=$?
 
+                # (woz@semihalf.com): for debugging purposes we ignore non-zero exit code
                 # [[ $ret_val -ne 0 ]] && exit
                 # change_stage "fetch-packages" "Build"
-                # TODO(woz@semihalf.com): for debugging purposes we ignore non-zero exit code
                 if [[ $ret_val -ne 0 && is_freebsd ]]; then
                     while true; do
                         read -p "Scons finished with ret_val=$ret_val. Do you wish to continue anyway? (y/n)" yn
@@ -741,7 +736,7 @@ function install_contrail() {
 
                 # install contrail modules
                 echo "Installing contrail modules"
-                # TODO(woz@semihalf.com): for debugging purposes production -> debug
+                # (woz@semihalf.com): for debugging purposes production -> debug
                 # pip_install --upgrade $(find $CONTRAIL_SRC/build/production -name "*.tar.gz" -print)
                 pip_install --upgrade $(find $CONTRAIL_SRC/build/debug -name "*.tar.gz" -print)
 
@@ -810,7 +805,7 @@ function install_contrail() {
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
             if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-                # TODO(woz@semihalf.com): I think it should be in build_contrail()
+                # (woz@semihalf.com): I think it should be in build_contrail()
                 if is_freebsd; then
                     sudo scons openstack/nova_contrail_vif
                 else
@@ -876,6 +871,7 @@ function test_install_cassandra_patch() {
 function insert_vrouter() {
     # (woz@semihalf.com): for get_Mask(), get_management_ip(), get_Mac().
     source contrail_config_functions
+    
     source /etc/contrail/contrail-compute.conf
     EXT_DEV=$dev
     if [ -e $VHOST_CFG ]; then
@@ -900,7 +896,7 @@ function insert_vrouter() {
             exit 1
         fi
         echo "Creating vhost interface: $DEVICE."
-        # TODO(woz@semihalf.com): for debugging purposes production -> debug
+        # (woz@semihalf.com): for debugging purposes production -> debug
         # VIF=$CONTRAIL_SRC/build/production/vrouter/utils/vif
         VIF=$CONTRAIL_SRC/build/debug/vrouter/utils/vif
     else    
@@ -922,7 +918,7 @@ function insert_vrouter() {
     || echo "Error creating interface: $DEVICE"
 
     echo "Adding $dev to vrouter"
-    # TODO(woz@semihalf.com): I'm not sure about --vhost-phys here
+    # (woz@semihalf.com): I'm not sure about --vhost-phys here
     sudo $VIF --add $dev --mac $DEV_MAC --vrf 0 --vhost-phys --type physical \
     || echo "Error adding $dev to vrouter"
 
@@ -1117,7 +1113,7 @@ function start_contrail() {
             sudo sysctl -w net.ipv4.ip_forward=1
         fi
         if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-            # TODO(woz@semihalf.com): for debugging purposes production -> debug
+            # (woz@semihalf.com): for debugging purposes production -> debug
             # sudo /opt/stack/contrail/build/production/vrouter/utils/vif --create vgw --mac 00:01:00:5e:00:00
             sudo /opt/stack/contrail/build/debug/vrouter/utils/vif --create vgw --mac 00:01:00:5e:00:00
         else
