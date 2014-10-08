@@ -1287,8 +1287,12 @@ function stop_contrail() {
             screen -X -S $SESSION quit
         fi
     fi
-    (cd $CONTRAIL_SRC/third_party/zookeeper-3.4.6; ./bin/zkServer.sh stop)
-    echo_summary "-----------------------STOPPING CONTRAIL--------------------------"
+
+    if !is_freebsd; then
+        (cd $CONTRAIL_SRC/third_party/zookeeper-3.4.6; ./bin/zkServer.sh stop)
+        echo_summary "-----------------------STOPPING CONTRAIL--------------------------"
+    fi
+
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         screen_stop redis
         screen_stop cass
@@ -1308,9 +1312,17 @@ function stop_contrail() {
     fi
     screen_stop agent  
     rm $CONTRAIL_DIR/status/contrail/*.failure /dev/null 2>&1
-    cmd=$(lsmod | grep vrouter)
+    if is_freebsd; then
+        cmd=$(kldstat | grep vrouter)
+    else
+        cmd=$(lsmod | grep vrouter)
+    fi
     if [ $? == 0 ]; then
-        cmd=$(sudo rmmod vrouter)
+        if is_freebsd; then
+            cmd=$(sudo kldunload vrouter)
+        else
+            cmd=$(sudo rmmod vrouter)
+        fi
         if [ $? == 0 ]; then
             source /etc/contrail/contrail-compute.conf
             if is_ubuntu; then
@@ -1328,7 +1340,11 @@ function stop_contrail() {
         sudo route del -net $CONTRAIL_VGW_PUBLIC_SUBNET dev vgw
     fi
     if [ $CONTRAIL_VGW_INTERFACE ]; then
-        sudo tunctl -d vgw
+        if is_freebsd; then
+            sudo ifconfig vgw destroy
+        else
+            sudo tunctl -d vgw
+        fi
     fi
     # restore saved screen settings
     SCREEN_NAME=$SAVED_SCREEN_NAME
@@ -1344,7 +1360,7 @@ function all_contrail() {
     fi
     if [[ $(read_stage) == "install" ]]; then
         configure_contrail
-       start_contrail
+        start_contrail
     fi
 }
 
