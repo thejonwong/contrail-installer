@@ -663,10 +663,8 @@ function build_contrail() {
 
                 # (woz@semihalf.com): On FreeBSD we need to build and run vrouter and agent only.
                 if is_freebsd; then
-                    # (woz@semihalf.com): -i should not be here in final version
-                    # and utils should be built with vrouter, not separately.
+                    # (woz@semihalf.com): -i should not be here in final version.
                     sudo scons -i vrouter
-                    sudo scons -i vrouter/utils
 
                     # (woz@semihalf.com): -i should not be here in final version.
                     sudo scons -i controller/src/vnsw/agent
