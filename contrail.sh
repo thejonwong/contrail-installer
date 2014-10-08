@@ -392,7 +392,7 @@ function download_dependencies {
         sudo yum -y install expat-devel gettext-devel curl-devel
         sudo yum -y install gcc-c++ python-devel autoconf automake libtool
         sudo yum -y install libevent libevent-devel libxml2-devel libxslt-devel
-	sudo yum -y install openssl-devel
+        sudo yum -y install openssl-devel
         sudo yum -y install tunctl
         sudo yum -y install libvirt-bin
         sudo yum -y install python-setuptools
@@ -445,7 +445,7 @@ function repo_initialize {
                 repo init -u git@github.com:juniper/contrail-vnc -b $CONTRAIL_BRANCH
                 rev_original="refs\/heads\/master"
                 rev_new="refs\/heads\/"$CONTRAIL_BRANCH 
-	        sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
+                sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
             else
                 repo init -u git@github.com:juniper/contrail-vnc
             fi    
@@ -454,7 +454,7 @@ function repo_initialize {
                 repo init -u https://github.com/juniper/contrail-vnc -b $CONTRAIL_BRANCH
                 rev_original="refs\/heads\/master"
                 rev_new="refs\/heads\/"$CONTRAIL_BRANCH 
-	        sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
+                sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
             else
                 repo init -u https://github.com/juniper/contrail-vnc 
             fi
@@ -473,7 +473,7 @@ function repo_initialize_backup {
                 repo init -u git@github.com:Juniper/contrail-vnc -b $CONTRAIL_BRANCH
                 rev_original="refs\/heads\/master"
                 rev_new="refs\/heads\/"$CONTRAIL_BRANCH 
-	        sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
+                sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
             else
                 repo init -u git@github.com:Juniper/contrail-vnc 
             fi
@@ -482,7 +482,7 @@ function repo_initialize_backup {
                 repo init -u https://github.com/Juniper/contrail-vnc -b $CONTRAIL_BRANCH
                 rev_original="refs\/heads\/master"
                 rev_new="refs\/heads\/"$CONTRAIL_BRANCH 
-	        sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
+                sed -i "s/$rev_original/$rev_new/" .repo/manifest.xml
             else
                 repo init -u https://github.com/Juniper/contrail-vnc 
             fi
@@ -580,9 +580,9 @@ function build_contrail() {
     
     # basic dependencies
     if ! which repo > /dev/null 2>&1 ; then
-	wget http://commondatastorage.googleapis.com/git-repo-downloads/repo
+    wget http://commondatastorage.googleapis.com/git-repo-downloads/repo
         chmod 0755 repo
-	sudo mv repo /usr/bin
+    sudo mv repo /usr/bin
     fi
 
     #checking whether previous execution stage of script is at started then
@@ -706,9 +706,9 @@ function build_contrail() {
             echo_msg "Selected profile is neither ALL nor COMPUTE"
             exit
         fi
-    else	
+    else    
         if [[ "$LAUNCHPAD_BRANCH" = "PPA" ]]; then
-	    sudo -E add-apt-repository -y ppa:opencontrail/ppa
+            sudo -E add-apt-repository -y ppa:opencontrail/ppa
         else
             sudo -E add-apt-repository -y ppa:opencontrail/snapshots
             sudo -E add-apt-repository -y ppa:opencontrail/ppa
@@ -716,7 +716,7 @@ function build_contrail() {
         apt_get update
         change_stage "python-dependencies" "Build"
     fi 
-	
+
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         download_redis
         download_node_for_npm
@@ -764,18 +764,18 @@ function install_contrail() {
                 download_ncclient
 
                 contrail_cwd=$(pwd)
-    		cd $CONTRAIL_SRC
-    		python contrail-webui-third-party/fetch_packages.py
-    		sed -ie "s/config\.discoveryService\.enable.*$/config\.discoveryService\.enable = false;/" contrail-web-core/config/config.global.js
-    		sed -ie "s/config\.featurePkg\.webController\.path.*$/config\.featurePkg\.webController\.path = '\/opt\/stack\/contrail\/contrail-web-controller';/" contrail-web-core/config/config.global.js
-    		sed -ie "s/config\.core_path.*$/config\.core_path = '\/opt\/stack\/contrail\/contrail-web-core';/" contrail-web-controller/webroot/common/js/controller.config.global.js
-    		cd contrail-web-core
-    		make fetch-pkgs-prod
-    		make dev-env REPO=webController
-    		cd ${contrail_cwd}
+                cd $CONTRAIL_SRC
+                python contrail-webui-third-party/fetch_packages.py
+                sed -ie "s/config\.discoveryService\.enable.*$/config\.discoveryService\.enable = false;/" contrail-web-core/config/config.global.js
+                sed -ie "s/config\.featurePkg\.webController\.path.*$/config\.featurePkg\.webController\.path = '\/opt\/stack\/contrail\/contrail-web-controller';/" contrail-web-core/config/config.global.js
+                sed -ie "s/config\.core_path.*$/config\.core_path = '\/opt\/stack\/contrail\/contrail-web-core';/" contrail-web-controller/webroot/common/js/controller.config.global.js
+                cd contrail-web-core
+                make fetch-pkgs-prod
+                make dev-env REPO=webController
+                cd ${contrail_cwd}
 
             else
-		# install contrail modules
+                # install contrail modules
                 echo "Installing contrail modules"
                 apt_get install contrail-config 
                 apt_get install python-contrail 
@@ -828,8 +828,8 @@ function install_contrail() {
                 # install VIF driver
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
             else
-            		cd ${contrail_cwd}
-            		# install contrail modules
+                cd ${contrail_cwd}
+                # install contrail modules
                 echo "Installing contrail modules"
                 apt_get install contrail-config contrail-lib contrail-utils
                 apt_get install contrail-vrouter-utils contrail-vrouter-agent 
@@ -856,15 +856,15 @@ function apply_patch() {
     [ -d "$dir" ] || die "No such directory $dir"
     [ -f "$patch" ] || die "No such patch file $patch"
     if [ -e "$patch_applied" ]; then
-	echo "Patch $(basename $patch) was previously applied in $dir"
+        echo "Patch $(basename $patch) was previously applied in $dir"
     else
-	echo "Installing patch $(basename $patch) in $dir..."
-	if $sudo patch -p0 -N -r - -d "$dir" < "$patch" 2>&1 | grep -i fail; then
-	    die "Failed to apply $patch in $dir"
-	else
-	    sudo touch "$patch_applied"
-	    true
-	fi
+        echo "Installing patch $(basename $patch) in $dir..."
+        if $sudo patch -p0 -N -r - -d "$dir" < "$patch" 2>&1 | grep -i fail; then
+            die "Failed to apply $patch in $dir"
+        else
+            sudo touch "$patch_applied"
+            true
+        fi
     fi
 }
 
@@ -877,11 +877,11 @@ function insert_vrouter() {
     source /etc/contrail/contrail-compute.conf
     EXT_DEV=$dev
     if [ -e $VHOST_CFG ]; then
-	source $VHOST_CFG
+        source $VHOST_CFG
     else
-	DEVICE=vhost0
-	IPADDR=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*inet *addr[: ]*\([0-9.]*\).*/\1/i p')
-	NETMASK=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*mask[: *]\([0-9.]*\).*/\1/i p')
+        DEVICE=vhost0
+        IPADDR=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*inet *addr[: ]*\([0-9.]*\).*/\1/i p')
+        NETMASK=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*mask[: *]\([0-9.]*\).*/\1/i p')
     fi
     # don't die in small memory environments
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
@@ -905,65 +905,65 @@ function insert_vrouter() {
     
     DEV_MAC=$(cat /sys/class/net/$dev/address)
     sudo $VIF --create $DEVICE --mac $DEV_MAC \
-        || echo "Error creating interface: $DEVICE"
+    || echo "Error creating interface: $DEVICE"
 
     echo "Adding $dev to vrouter"
     sudo $VIF --add $dev --mac $DEV_MAC --vrf 0 --vhost-phys --type physical \
-	|| echo "Error adding $dev to vrouter"
+    || echo "Error adding $dev to vrouter"
 
     echo "Adding $DEVICE to vrouter"
     sudo $VIF --add $DEVICE --mac $DEV_MAC --vrf 0 --xconnect $dev --type vhost \
-	|| echo "Error adding $DEVICE to vrouter"
+    || echo "Error adding $DEVICE to vrouter"
 
     if is_ubuntu; then
 
-	# copy eth0 interface params, routes, and dns to a new
-	# interfaces file for vhost0
-	(
-	cat <<EOF
+        # copy eth0 interface params, routes, and dns to a new
+        # interfaces file for vhost0
+        (
+        cat <<EOF
 iface $dev inet manual
 
 iface $DEVICE inet static
 EOF
-	sudo ifconfig $dev | perl -ne '
+        sudo ifconfig $dev | perl -ne '
 /HWaddr\s*([a-f\d:]+)/i    && print(" hwaddr $1\n");
 /inet addr:\s*([\d.]+)/i && print(" address $1\n");
 /Bcast:\s*([\d.]+)/i     && print(" broadcast $1\n");
 /Mask:\s*([\d.]+)/i      && print(" netmask $1\n");
 '
-	sudo route -n | perl -ane '$F[7]=="'$dev'" && ($F[3] =~ /G/) && print(" gateway $F[1]\n")'
+        sudo route -n | perl -ane '$F[7]=="'$dev'" && ($F[3] =~ /G/) && print(" gateway $F[1]\n")'
 
-	perl -ne '/^nameserver ([\d.]+)/ && push(@dns, $1); 
+        perl -ne '/^nameserver ([\d.]+)/ && push(@dns, $1); 
 END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' /etc/resolv.conf
 ) >/tmp/interfaces
 
-	# bring down the old interface
-	# and bring it back up with no IP address
-	sudo ifdown $dev
-	sudo ifconfig $dev 0 up
+        # bring down the old interface
+        # and bring it back up with no IP address
+        sudo ifdown $dev
+        sudo ifconfig $dev 0 up
 
-	# bring up vhost0
-	sudo ifup -i /tmp/interfaces $DEVICE
-	echo "Sleeping 10 seconds to allow link state to settle"
-	sleep 10
-	sudo ifup -i /tmp/interfaces $dev
+        # bring up vhost0
+        sudo ifup -i /tmp/interfaces $DEVICE
+        echo "Sleeping 10 seconds to allow link state to settle"
+        sleep 10
+        sudo ifup -i /tmp/interfaces $dev
     else
-	echo "Sleeping 10 seconds to allow link state to settle"
-	sudo ifup $DEVICE
-	sudo cp /etc/contrail/ifcfg-$dev /etc/sysconfig/network-scripts
-	sleep 10
-	echo "Restarting network service"
-	sudo service network restart
+        echo "Sleeping 10 seconds to allow link state to settle"
+        sudo ifup $DEVICE
+        sudo cp /etc/contrail/ifcfg-$dev /etc/sysconfig/network-scripts
+        sleep 10
+        echo "Restarting network service"
+        sudo service network restart
     fi
 }
 
 function test_insert_vrouter ()
 {
     if lsmod | grep -q vrouter; then 
-	echo "vrouter module already inserted."
+        echo "vrouter module already inserted."
     else
-	insert_vrouter
-	echo "vrouter kernel module inserted."
+        insert_vrouter
+        echo "vrouter kernel module inserted."
     fi
 }
 
@@ -1020,7 +1020,7 @@ function start_contrail() {
 
         screen_it zk  "cd $CONTRAIL_SRC/third_party/zookeeper-3.4.6; ./bin/zkServer.sh start"
 
-	if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
+        if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
             screen_it ifmap "cd $CONTRAIL_SRC/build/packages/ifmap-server; java -jar ./irond.jar"
         else
             screen_it ifmap "cd /usr/share/ifmap-server; java -jar ./irond.jar" 
@@ -1100,7 +1100,7 @@ function start_contrail() {
     
     # make a fake contrail-version when contrail isn't installed by yum
     if ! contrail-version >/dev/null 2>&1; then
-	cat >$TOP_DIR/bin/contrail-version <<EOF2
+        cat >$TOP_DIR/bin/contrail-version <<EOF2
 #! /bin/sh
 cat <<EOF
 Package                                Version                 Build-ID | Repo | RPM Name
@@ -1221,7 +1221,8 @@ function configure_contrail() {
         replace_contrail_control_conf
         replace_dns_conf
         replace_irond_basic_auth_users
-    fi	        
+    fi
+
     replace_contrail_compute_conf
     replace_contrail_vrouter_agent_conf
     write_ifcfg-vhost0
