@@ -301,42 +301,42 @@ function download_dependencies {
             apt_get install python-sphinx
         fi
     elif is_freebsd; then
-        sudo pkg install -y net/py-novaclient
-        # sudo pkg install -y devel/py-setuptools
-        sudo pkg install -y patch
-        sudo pkg install -y scons
-        sudo pkg install -y flex
-        sudo pkg install -y bison
-        sudo pkg install -y vim
-        sudo pkg install -y unzip
-        sudo pkg install -y autoconf
-        sudo pkg install -y automake
-        sudo pkg install -y libtool
-        sudo pkg install -y curl
-        sudo pkg install -y screen
-        sudo pkg install -y debhelper
-        sudo pkg install -y gmake
-        sudo pkg install -y libxml2
-        sudo pkg install -y libxslt
-        sudo pkg install -y expat
-        sudo pkg install -y gettext
+        install_package -y net/py-novaclient
+        # install_package -y devel/py-setuptools
+        install_package -y patch
+        install_package -y scons
+        install_package -y flex
+        install_package -y bison
+        install_package -y vim
+        install_package -y unzip
+        install_package -y autoconf
+        install_package -y automake
+        install_package -y libtool
+        install_package -y curl
+        install_package -y screen
+        install_package -y debhelper
+        install_package -y gmake
+        install_package -y libxml2
+        install_package -y libxslt
+        install_package -y expat
+        install_package -y gettext
         # Currently (2014-09-04) gcc 4.7 is default installed with pkg install gcc,
         # so this is the version I use to develop the script. Versions 4.8 or 4.9
         # may not be compatibile with contrail.
-        # sudo pkg install -y gcc
-        sudo pkg install -y gcc47
-        sudo pkg install -y python2
-        sudo pkg install -y libevent2
-        sudo pkg install -y libvirt
-        sudo pkg install -y devel/py-lxml
-        sudo pkg install -y databases/py-redis
-        sudo pkg install -y apache-ant
-        sudo pkg install -y java/openjdk7
-        sudo pkg install -y log4j
-        sudo pkg install -y devel/pkgconf
-        sudo pkg install -y gnupg
-        sudo pkg install -y protobuf
-        sudo pkg install -y netmask
+        # install_package -y gcc
+        install_package -y gcc47
+        install_package -y python2
+        install_package -y libevent2
+        install_package -y libvirt
+        install_package -y devel/py-lxml
+        install_package -y databases/py-redis
+        install_package -y apache-ant
+        install_package -y java/openjdk7
+        install_package -y log4j
+        install_package -y devel/pkgconf
+        install_package -y gnupg
+        install_package -y protobuf
+        install_package -y netmask
         # I did not find equivalent packages for:
         # uml-utilities
         # python-software-properties
@@ -933,8 +933,10 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' /etc/resolv.c
         sleep 10
         echo "Restarting network service"
         if is_freebsd; then
-            sudo service netif restart
-            sudo service routing restart
+            # sudo service netif restart
+            # sudo service routing restart
+            restart_service netif
+            restart_service routing
         else
             sudo service network restart
         fi
