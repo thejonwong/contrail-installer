@@ -833,23 +833,35 @@ function test_install_cassandra_patch() {
 
 # take over physical interface
 function insert_vrouter() {
+    # (woz@semihalf.com): for get_Mask(), get_management_ip(), get_Mac().
+    source contrail_config_functions
     source /etc/contrail/contrail-compute.conf
     EXT_DEV=$dev
     if [ -e $VHOST_CFG ]; then
         source $VHOST_CFG
     else
         DEVICE=vhost0
-        IPADDR=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*inet *addr[: ]*\([0-9.]*\).*/\1/i p')
-        NETMASK=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*mask[: *]\([0-9.]*\).*/\1/i p')
+        # (woz@semihalf.com): why sed here, while we have functions for that?
+        # IPADDR=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*inet *addr[: ]*\([0-9.]*\).*/\1/i p')
+        # NETMASK=$(sudo ifconfig $EXT_DEV | sed -ne 's/.*mask[: *]\([0-9.]*\).*/\1/i p')
+        IPADDR=$(get_management_ip $EXT_DEV)
+        NETMASK=$(get_Mask $EXT_DEV)
     fi
     # don't die in small memory environments
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-        sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=4096 vr_oflow_entries=512
+        if is_freebsd; then
+            sudo kldload -n $CONTRAIL_SRC/vrouter/freebsd/$kmod
+        else
+            sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=4096 vr_oflow_entries=512
+        fi
+        
         if [[ $? -eq 1 ]] ; then 
             exit 1
         fi
         echo "Creating vhost interface: $DEVICE."
-        VIF=$CONTRAIL_SRC/build/production/vrouter/utils/vif
+        # TODO(woz@semihalf.com): for debugging purposes production -> debug
+        # VIF=$CONTRAIL_SRC/build/production/vrouter/utils/vif
+        VIF=$CONTRAIL_SRC/build/debug/vrouter/utils/vif
     else    
         vrouter_pkg_version=$(zless /usr/share/doc/contrail-vrouter-agent/changelog.gz )
         vrouter_pkg_version=${vrouter_pkg_version#* (*}
@@ -862,11 +874,14 @@ function insert_vrouter() {
         VIF=/usr/bin/vif
     fi 
     
-    DEV_MAC=$(cat /sys/class/net/$dev/address)
+    # (woz@semihalf.com): there's a function for that.
+    # DEV_MAC=$(cat /sys/class/net/$dev/address)
+    DEV_MAC=$(get_Mac $dev)
     sudo $VIF --create $DEVICE --mac $DEV_MAC \
     || echo "Error creating interface: $DEVICE"
 
     echo "Adding $dev to vrouter"
+    # TODO(woz@semihalf.com): I'm not sure about --vhost-phys here
     sudo $VIF --add $dev --mac $DEV_MAC --vrf 0 --vhost-phys --type physical \
     || echo "Error adding $dev to vrouter"
 
@@ -908,11 +923,20 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' /etc/resolv.c
         sudo ifup -i /tmp/interfaces $dev
     else
         echo "Sleeping 10 seconds to allow link state to settle"
-        sudo ifup $DEVICE
+        if is_freebsd; then
+            sudo ifconfig $DEVICE up
+        else
+            sudo ifup $DEVICE
+        fi
         sudo cp /etc/contrail/ifcfg-$dev /etc/sysconfig/network-scripts
         sleep 10
         echo "Restarting network service"
-        sudo service network restart
+        if is_freebsd; then
+            sudo service netif restart
+            sudo service routing restart
+        else
+            sudo service network restart
+        fi
     fi
 }
 
@@ -1045,9 +1069,15 @@ function start_contrail() {
 
     # agent
     if [ $CONTRAIL_VGW_INTERFACE -a $CONTRAIL_VGW_PUBLIC_SUBNET -a $CONTRAIL_VGW_PUBLIC_NETWORK ]; then
-        sudo sysctl -w net.ipv4.ip_forward=1
+        if is_freebsd; then
+            sudo sysctl -w net.inet.ip.forwarding=1
+        else
+            sudo sysctl -w net.ipv4.ip_forward=1
+        fi
         if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-            sudo /opt/stack/contrail/build/production/vrouter/utils/vif --create vgw --mac 00:01:00:5e:00:00
+            # TODO(woz@semihalf.com): for debugging purposes production -> debug
+            # sudo /opt/stack/contrail/build/production/vrouter/utils/vif --create vgw --mac 00:01:00:5e:00:00
+            sudo /opt/stack/contrail/build/debug/vrouter/utils/vif --create vgw --mac 00:01:00:5e:00:00
         else
             sudo /usr/bin/vif --create vgw --mac 00:01:00:5e:00:00
         fi            
@@ -1096,7 +1126,7 @@ END
         PROV_MS_PATH="$CONTRAIL_SRC/controller/src/config/utils"
     else
         PROV_MS_PATH="/usr/share/contrail-utils"
-     fi
+    fi
     python $PROV_MS_PATH/provision_linklocal.py \
         --linklocal_service_name metadata \
         --linklocal_service_ip 169.254.169.254 \
