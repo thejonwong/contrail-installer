@@ -9,6 +9,7 @@ if [[ $EUID -eq 0 ]]; then
     exit 1
 fi
 
+# (woz@semihalf.com) Did this for debugging purposes.
 if [[ ! -f localrc ]]; then
     while true; do
         read -p "There is no localrc file present. Do you wish to continue anyway? (y/n)" yn
@@ -37,6 +38,10 @@ source localrc
 # ``os_RELEASE``, ``os_UPDATE``, ``os_PACKAGE``, ``os_CODENAME``
 # and ``DISTRO``
 GetDistro
+
+# (woz@semihalf.com) On FreeBSD prepend '/usr/local' to all the '/etc' strings.
+# On non-BSD systems set the prefix empty.
+INSTALL_PREFIX=$(get_install_prefix)
 
 BS_FL_CONTROLLERS_PORT=${BS_FL_CONTROLLERS_PORT:-localhost:80}
 BS_FL_OF_PORT=${BS_FL_OF_PORT:-6633}
@@ -88,15 +93,8 @@ function setup_root_access {
     is_package_installed sudo || install_package sudo
 
     # UEC images ``/etc/sudoers`` does not have a ``#includedir``, add one
-
-    # (woz@semihalf.com): FreeBSD keeps sudoers and sudoers.d in different places than Linux
-    if is_freebsd; then
-        local etc_sudoers='/usr/local/etc/sudoers'
-        local etc_sudoers_d='/usr/local/etc/sudoers.d'
-    else
-        local etc_sudoers='/etc/sudoers'
-        local etc_sudoers_d='/etc/sudoers.d'
-    fi
+    local etc_sudoers="$INSTALL_PREFIX/etc/sudoers"
+    local etc_sudoers_d="$INSTALL_PREFIX/etc/sudoers.d"
 
     sudo grep -q "^#includedir.*$etc_sudoers_d" $etc_sudoers ||
         echo "#includedir $etc_sudoers_d" | sudo tee -a $etc_sudoers
@@ -862,7 +860,7 @@ function apply_patch() {
 }
 
 function test_install_cassandra_patch() { 
-    apply_patch $TOP_DIR/cassandra-env.sh.patch /etc/cassandra sudo
+    apply_patch $TOP_DIR/cassandra-env.sh.patch $INSTALL_PREFIX/etc/cassandra sudo
 }
 
 # take over physical interface
@@ -870,7 +868,7 @@ function insert_vrouter() {
     # (woz@semihalf.com): for get_Mask(), get_management_ip(), get_Mac().
     source contrail_config_functions
     
-    source /etc/contrail/contrail-compute.conf
+    source $INSTALL_PREFIX/etc/contrail/contrail-compute.conf
     EXT_DEV=$dev
     if [ -e $VHOST_CFG ]; then
         source $VHOST_CFG
@@ -943,7 +941,7 @@ EOF
         sudo route -n | perl -ane '$F[7]=="'$dev'" && ($F[3] =~ /G/) && print(" gateway $F[1]\n")'
 
         perl -ne '/^nameserver ([\d.]+)/ && push(@dns, $1); 
-END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' /etc/resolv.conf
+END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' $INSTALL_PREFIX/etc/resolv.conf
 ) >/tmp/interfaces
 
         # bring down the old interface
@@ -963,7 +961,7 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' /etc/resolv.c
         else
             sudo ifup $DEVICE
         fi
-        sudo cp /etc/contrail/ifcfg-$dev /etc/sysconfig/network-scripts
+        sudo cp $INSTALL_PREFIX/etc/contrail/ifcfg-$dev $INSTALL_PREFIX/etc/sysconfig/network-scripts
         sleep 10
         echo "Restarting network service"
         if is_freebsd; then
@@ -1022,10 +1020,10 @@ function start_contrail() {
     echo_summary "-----------------------STARTING CONTRAIL---------------------------"
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         if is_ubuntu; then
-            REDIS_CONF="/etc/redis/redis.conf"
+            REDIS_CONF="$INSTALL_PREFIX/etc/redis/redis.conf"
             CASS_PATH="/usr/sbin/cassandra"
         else
-            REDIS_CONF="/etc/redis.conf"
+            REDIS_CONF="$INSTALL_PREFIX/etc/redis.conf"
             CASS_PATH="$CONTRAIL_SRC/third_party/apache-cassandra-2.0.2/bin/cassandra"
         fi
 
@@ -1047,19 +1045,19 @@ function start_contrail() {
         fi
         sleep 2
     
-        screen_it disco "python $(pywhere discovery)/disc_server.py --reset_config --conf_file /etc/contrail/contrail-discovery.conf"
+        screen_it disco "python $(pywhere discovery)/disc_server.py --reset_config --conf_file $INSTALL_PREFIX/etc/contrail/contrail-discovery.conf"
         sleep 2
 
         # find the directory where vnc_cfg_api_server was installed and start vnc_cfg_api_server.py
-        screen_it apiSrv "python $(pywhere vnc_cfg_api_server)/vnc_cfg_api_server.py --conf_file /etc/contrail/contrail-api.conf --reset_config --rabbit_password ${RABBIT_PASSWORD}"
+        screen_it apiSrv "python $(pywhere vnc_cfg_api_server)/vnc_cfg_api_server.py --conf_file $INSTALL_PREFIX/etc/contrail/contrail-api.conf --reset_config --rabbit_password ${RABBIT_PASSWORD}"
         echo "Waiting for api-server to start..."
         if ! timeout $SERVICE_TIMEOUT sh -c "while ! http_proxy= wget -q -O- http://${SERVICE_HOST}:8082; do sleep 1; done"; then
             echo "api-server did not start"
             exit 1
         fi
         sleep 2
-        screen_it schema "python $(pywhere schema_transformer)/to_bgp.py --reset_config --conf_file /etc/contrail/contrail-schema.conf"
-        screen_it svc-mon "/usr/bin/contrail-svc-monitor --reset_config --conf_file /etc/contrail/svc-monitor.conf"
+        screen_it schema "python $(pywhere schema_transformer)/to_bgp.py --reset_config --conf_file $INSTALL_PREFIX/etc/contrail/contrail-schema.conf"
+        screen_it svc-mon "/usr/bin/contrail-svc-monitor --reset_config --conf_file $INSTALL_PREFIX/etc/contrail/svc-monitor.conf"
 
         #source /etc/contrail/control_param.conf
         if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
@@ -1120,7 +1118,7 @@ function start_contrail() {
         sudo ifconfig vgw up
         sudo route add -net $CONTRAIL_VGW_PUBLIC_SUBNET dev vgw
     fi
-    source /etc/contrail/contrail-compute.conf
+    source $INSTALL_PREFIX/etc/contrail/contrail-compute.conf
     #sudo mkdir -p $(dirname $VROUTER_LOGFILE)
     mkdir -p $TOP_DIR/bin
     
@@ -1143,14 +1141,14 @@ EOF2
         cat > $TOP_DIR/bin/vnsw.hlpr <<END
 #! /bin/bash
 PATH=$TOP_DIR/bin:$PATH
-LD_LIBRARY_PATH=/opt/stack/contrail/build/lib $CONTRAIL_SRC/build/production/vnsw/agent/contrail/contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf --DEFAULT.log_file=/var/log/vrouter.log 
+LD_LIBRARY_PATH=/opt/stack/contrail/build/lib $CONTRAIL_SRC/build/production/vnsw/agent/contrail/contrail-vrouter-agent --config_file=$INSTALL_PREFIX/etc/contrail/contrail-vrouter-agent.conf --DEFAULT.log_file=/var/log/vrouter.log 
 END
   
     else
         cat > $TOP_DIR/bin/vnsw.hlpr <<END
 #! /bin/bash
 PATH=$TOP_DIR/bin:$PATH
-LD_LIBRARY_PATH=/usr/lib /usr/bin/contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf --DEFAULT.log_file=/var/log/vrouter.log 
+LD_LIBRARY_PATH=/usr/lib /usr/bin/contrail-vrouter-agent --config_file=$INSTALL_PREFIX/etc/contrail/contrail-vrouter-agent.conf --DEFAULT.log_file=/var/log/vrouter.log 
 END
     fi
     chmod a+x $TOP_DIR/bin/vnsw.hlpr
@@ -1172,7 +1170,7 @@ END
         --oper add
 
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
-        screen_it redis-w "sudo redis-server /etc/contrail/redis-webui.conf"
+        screen_it redis-w "sudo redis-server $INSTALL_PREFIX/etc/contrail/redis-webui.conf"
 
         if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then 
             screen_it ui-jobs "cd /opt/stack/contrail/contrail-web-core; sudo node jobServerStart.js"
@@ -1218,12 +1216,12 @@ function configure_contrail() {
     # )
 
     #defaults loading
-    sudo mkdir -p /etc/contrail
-    sudo mkdir -p /etc/sysconfig/network-scripts    
-    sudo chown -R `whoami` /etc/contrail
-    sudo chmod  664 /etc/contrail/*
-    sudo chown -R `whoami` /etc/sysconfig/network-scripts
-    sudo chmod  664 /etc/sysconfig/network-scripts/*
+    sudo mkdir -p $INSTALL_PREFIX/etc/contrail
+    sudo mkdir -p $INSTALL_PREFIX/etc/sysconfig/network-scripts    
+    sudo chown -R `whoami` $INSTALL_PREFIX/etc/contrail
+    sudo chmod  664 $INSTALL_PREFIX/etc/contrail/*
+    sudo chown -R `whoami` $INSTALL_PREFIX/etc/sysconfig/network-scripts
+    sudo chmod  664 $INSTALL_PREFIX/etc/sysconfig/network-scripts/*
     cd $TOP_DIR  
     
     #un-comment if required after review
@@ -1320,15 +1318,15 @@ function stop_contrail() {
             cmd=$(sudo rmmod vrouter)
         fi
         if [ $? == 0 ]; then
-            source /etc/contrail/contrail-compute.conf
+            source $INSTALL_PREFIX/etc/contrail/contrail-compute.conf
             if is_ubuntu; then
                 sudo ifdown  $dev
                 sudo ifup    $dev
                 sudo ifdown vhost0
                 
             else
-                sudo rm -f /etc/sysconfig/network-scripts/ifcfg-$dev
-                sudo rm -f /etc/sysconfig/network-scripts/ifcfg-vhost0
+                sudo rm -f $INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-$dev
+                sudo rm -f $INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-vhost0
             fi
         fi
     fi
