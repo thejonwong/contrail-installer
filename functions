@@ -537,6 +537,15 @@ function is_freebsd {
     [ "$os_VENDOR" = "FreeBSD" ]
 }
 
+# On FreeBSD prepend '/usr/local' to all the '/etc' strings. On non-BSD systems
+# set the prefix empty.
+function get_install_prefix() {
+    if is_freebsd; then
+        echo "/usr/local"
+    else
+        echo ""
+    fi
+}
 
 # Determine if current distribution is a SUSE-based distribution
 # (openSUSE, SLE).
