@@ -221,11 +221,19 @@ function get_default_host_ip() {
     local host_ip=$4
 
     # Find the interface used for the default route
-    host_ip_iface=${host_ip_iface:-$(ip route | sed -n '/^default/{ s/.*dev \(\w\+\)\s\+.*/\1/; p; }' | head -1)}
+    if is_freebsd; then
+        host_ip_iface=${host_ip_iface:-$(netstat -rn | grep default | awk '{print $6}')}
+    else
+        host_ip_iface=${host_ip_iface:-$(ip route | sed -n '/^default/{ s/.*dev \(\w\+\)\s\+.*/\1/; p; }' | head -1)}
+    fi
     # Search for an IP unless an explicit is set by ``HOST_IP`` environment variable
     if [ -z "$host_ip" -o "$host_ip" == "dhcp" ]; then
         host_ip=""
-        host_ips=`LC_ALL=C ip -f inet addr show ${host_ip_iface} | awk '/inet/ {split($2,parts,"/");  print parts[1]}'`
+        if is_freebsd; then
+            host_ips=$(ifconfig ${iface} | grep 'inet ' | cut -d' ' -f2)
+        else
+            host_ips=`LC_ALL=C ip -f inet addr show ${host_ip_iface} | awk '/inet/ {split($2,parts,"/");  print parts[1]}'`
+        fi
         for IP in $host_ips; do
             # Attempt to filter out IP addresses that are part of the fixed and
             # floating range. Note that this method only works if the ``netaddr``
@@ -718,7 +726,13 @@ function inicomment() {
     local file=$1
     local section=$2
     local option=$3
-    sed -i -e "/^\[$section\]/,/^\[.*\]/ s|^\($option[ \t]*=.*$\)|#\1|" "$file"
+    local sed_re='/^\[$section\]/,/^\[.*\]/ s|^\($option[ \t]*=.*$\)|#\1|'
+
+    if is_freebsd; then
+        sed -i '' -e "$sed_re" "$file"
+    else
+        sed -i -e "$sed_re" "$file"
+    fi
 }
 
 
@@ -728,7 +742,12 @@ function iniuncomment() {
     local file=$1
     local section=$2
     local option=$3
-    sed -i -e "/^\[$section\]/,/^\[.*\]/ s|[^ \t]*#[ \t]*\($option[ \t]*=.*$\)|\1|" "$file"
+    local sed_re="/^\[$section\]/,/^\[.*\]/ s|[^ \t]*#[ \t]*\($option[ \t]*=.*$\)|\1|"
+    if is_freebsd; then
+        sed -i '' -e "$sed_re" "$file"
+    else
+        sed -i -e "$sed_re" "$file"
+    fi
 }
 
 
@@ -772,13 +791,23 @@ function iniset() {
     fi
     if ! ini_has_option "$file" "$section" "$option"; then
         # Add it
-        sed -i -e "/^\[$section\]/ a\\
+        if is_freebsd; then
+            sed -i '' -e "/^\[$section\]/ a\\
 $option = $value
 " "$file"
+        else
+            sed -i -e "/^\[$section\]/ a\\
+$option = $value
+" "$file"
+        fi
     else
         local sep=$(echo -ne "\x01")
         # Replace it
-        sed -i -e '/^\['${section}'\]/,/^\[.*\]/ s'${sep}'^\('${option}'[ \t]*=[ \t]*\).*$'${sep}'\1'"${value}"${sep} "$file"
+        if is_freebsd; then
+            sed -i '' -e '/^\['${section}'\]/,/^\[.*\]/ s'${sep}'^\('${option}'[ \t]*=[ \t]*\).*$'${sep}'\1'"${value}"${sep} "$file"
+        else
+            sed -i -e '/^\['${section}'\]/,/^\[.*\]/ s'${sep}'^\('${option}'[ \t]*=[ \t]*\).*$'${sep}'\1'"${value}"${sep} "$file"
+        fi
     fi
 }
 
@@ -814,13 +843,24 @@ function iniset_multiline() {
         echo -e "\n[$section]" >>"$file"
     else
         # Remove old values
-        sed -i -e "/^\[$section\]/,/^\[.*\]/ { /^$option[ \t]*=/ d; }" "$file"
+        local sed_re="/^\[$section\]/,/^\[.*\]/ { /^$option[ \t]*=/ d; }"
+        if is_freebsd; then
+            sed -i '' -e "$sed_re" "$file"
+        else
+            sed -i -e "$sed_re" "$file"
+        fi
     fi
     # Add new ones
     for v in $values; do
-        sed -i -e "/^\[$section\]/ a\\
+        if is_freebsd; then
+            sed -i '' -e "/^\[$section\]/ a\\
 $option = $v
 " "$file"
+        else
+            sed -i -e "/^\[$section\]/ a\\
+$option = $v
+" "$file"
+        fi
     done
 }
 
@@ -1109,7 +1149,7 @@ function cleanup_tmp {
 # restart_service service-name
 function restart_service() {
     if is_ubuntu || is_freebsd; then
-        sudo /usr/sbin/service $1 restart
+        sudo /usr/sbin/service $1 onerestart
     else
         sudo /sbin/service $1 restart
     fi
@@ -1321,6 +1361,10 @@ function service_check() {
 
 # Returns true if the directory is on a filesystem mounted via NFS.
 function is_nfs_directory() {
+    if is_freebsd; then
+        (df -t nfs "$@" > /dev/null 2> /dev/null)
+        return $?
+    fi
     local mount_type=`stat -f -L -c %T $1`
     test "$mount_type" == "nfs"
 }
@@ -1884,8 +1928,10 @@ function add_user_to_group() {
         GetOSVersion
     fi
 
+    if is_freebsd; then
+        sudo pw groupmod "$group" -m "$user"
     # SLE11 and openSUSE 12.2 don't have the usual usermod
-    if ! is_suse || [[ "$os_VENDOR" = "openSUSE" && "$os_RELEASE" != "12.2" ]]; then
+    elif ! is_suse || [[ "$os_VENDOR" = "openSUSE" && "$os_RELEASE" != "12.2" ]]; then
         sudo usermod -a -G "$group" "$user"
     else
         sudo usermod -A "$group" "$user"
@@ -1937,8 +1983,16 @@ function check_path_perm_sanity() {
     local rebuilt_path=""
     for i in $(echo ${real_path} | tr "/" " "); do
         rebuilt_path=$rebuilt_path"/"$i
+        
+        local statperm=""
+        if is_freebsd; then
+            statperm="$(stat -f "%p" ${rebuilt_path})"
+            statperm="${statperm: -3}"
+        else
+            statperm="$(stat -c '%a' ${rebuilt_path})"
+        fi
 
-        if [[ $(stat -c '%a' ${rebuilt_path}) = 700 ]]; then
+        if [[ $statperm = 700 ]]; then
             echo "*** DEST path element"
             echo "***    ${rebuilt_path}"
             echo "*** appears to have 0700 permissions."
