@@ -1140,10 +1140,11 @@ EOF2
     chmod a+x $TOP_DIR/bin/contrail-version
     
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
+        # (woz@semihalf.com): for debugging purposes production -> debug in vnsw.hlpr
         cat > $TOP_DIR/bin/vnsw.hlpr <<END
 #! /bin/bash
 PATH=$TOP_DIR/bin:$PATH
-LD_LIBRARY_PATH=/opt/stack/contrail/build/lib $CONTRAIL_SRC/build/production/vnsw/agent/contrail/contrail-vrouter-agent --config_file=$INSTALL_PREFIX/etc/contrail/contrail-vrouter-agent.conf --DEFAULT.log_file=/var/log/vrouter.log 
+LD_LIBRARY_PATH=/opt/stack/contrail/build/lib $CONTRAIL_SRC/build/debug/vnsw/agent/contrail/contrail-vrouter-agent --config_file=$INSTALL_PREFIX/etc/contrail/contrail-vrouter-agent.conf --DEFAULT.log_file=/var/log/vrouter.log 
 END
   
     else
