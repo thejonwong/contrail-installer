@@ -338,7 +338,9 @@ function download_dependencies {
         install_package -y scons
         install_package -y flex
         install_package -y bison
-        install_package -y vim
+        # (woz@semihalf.com): vim requires icu, which is used instead
+        # of third_party's icu what causes errors while building agent
+        # install_package -y vim
         install_package -y unzip
         install_package -y autoconf
         install_package -y automake
