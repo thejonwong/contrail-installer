@@ -632,8 +632,12 @@ function build_contrail() {
 
                 # (woz@semihalf.com): On FreeBSD we need to build and run vrouter and agent only.
                 if is_freebsd; then
-                    # (woz@semihalf.com): -i should not be here in final version.
+                    # (woz@semihalf.com): We need to build ICU libraries first and propagate their location.
                     sudo scons build/third_party/icu
+                    sudo bash -c "echo "/opt/stack/contrail/build/lib" > /usr/local/libdata/ldconfig/contrail-icu"
+                    sudo /etc/rc.d/ldconfig restart
+                    
+                    # (woz@semihalf.com): -i should not be here in final version.
                     sudo scons -i vrouter
 
                     # (woz@semihalf.com): -i should not be here in final version.
