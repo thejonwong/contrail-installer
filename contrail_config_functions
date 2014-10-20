@@ -472,7 +472,7 @@ function get_device_by_ip()
     ip=$1
     interface=""
 
-    if is_freebsd; do
+    if is_freebsd; then
         interface_list=$(ifconfig -l)
     else
         interface_list=$(sudo netstat -i | awk '{print $1}'|sed -n '1,2!p')
