@@ -299,43 +299,43 @@ function download_dependencies {
             apt_get install python-sphinx
         fi
     elif is_freebsd; then
-        install_package -y net/py-novaclient
-        install_package -y patch
-        install_package -y scons
-        install_package -y flex
-        install_package -y bison
-        # (woz@semihalf.com): vim requires icu, which is used instead
-        # of third_party's icu what causes errors while building agent
-        # install_package -y vim
-        install_package -y unzip
-        install_package -y autoconf
-        install_package -y automake
-        install_package -y libtool
-        install_package -y curl
-        install_package -y screen
-        install_package -y debhelper
-        install_package -y gmake
-        install_package -y libxml2
-        install_package -y libxslt
-        install_package -y expat
-        install_package -y gettext
+        install_package net/py-novaclient
+        install_package patch
+        install_package scons
+        install_package flex
+        install_package bison
+        install_package vim
+        install_package unzip
+        install_package autoconf
+        install_package automake
+        install_package libtool
+        install_package curl
+        install_package screen
+        install_package debhelper
+        install_package gmake
+        install_package libxml2
+        install_package libxslt
+        install_package expat
+        install_package gettext
         # (woz@semihalf.com): Currently (2014-09-04) gcc 4.7 is default installed with pkg install gcc,
         # so this is the version I use to develop the script. Versions 4.8 or 4.9
         # may not be compatibile with contrail.
-        # install_package -y gcc
-        install_package -y gcc47
-        install_package -y python2
-        install_package -y libevent2
-        install_package -y libvirt
-        install_package -y devel/py-lxml
-        install_package -y databases/py-redis
-        install_package -y apache-ant
-        install_package -y java/openjdk7
-        install_package -y log4j
-        install_package -y devel/pkgconf
-        install_package -y gnupg
-        install_package -y protobuf
-        install_package -y netmask
+        # install_package gcc
+        install_package gcc47
+        install_package python2
+        install_package libevent2
+        install_package libvirt
+        install_package devel/py-lxml
+        install_package databases/py-redis
+        install_package apache-ant
+        install_package java/openjdk7
+        install_package log4j
+        install_package devel/pkgconf
+        install_package gnupg
+        install_package protobuf
+        install_package netmask
+        install_package devel/py-pip
+        install_package wget
         # (woz@semihalf.com): I did not find equivalent packages for:
         # uml-utilities
         # python-software-properties
