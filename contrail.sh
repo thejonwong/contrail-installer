@@ -633,6 +633,7 @@ function build_contrail() {
                 # (woz@semihalf.com): On FreeBSD we need to build and run vrouter and agent only.
                 if is_freebsd; then
                     # (woz@semihalf.com): -i should not be here in final version.
+                    sudo scons build/third_party/icu
                     sudo scons -i vrouter
 
                     # (woz@semihalf.com): -i should not be here in final version.
