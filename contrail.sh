@@ -664,12 +664,12 @@ function build_contrail() {
                 # (woz@semihalf.com): On FreeBSD we need to build and run vrouter and agent only.
                 if is_freebsd; then
                     # (woz@semihalf.com): We need to build ICU libraries first and propagate their location.
-                    sudo scons build/third_party/icu
+                    sudo scons controller/lib/icu
                     sudo bash -c "echo "/opt/stack/contrail/build/lib" > /usr/local/libdata/ldconfig/contrail-icu"
                     sudo /etc/rc.d/ldconfig restart
                     
                     # (woz@semihalf.com): -i should not be here in final version.
-                    sudo scons -i vrouter
+                    sudo scons vrouter
 
                     # (woz@semihalf.com): -i should not be here in final version.
                     sudo scons -i controller/src/vnsw/agent
@@ -821,7 +821,9 @@ function install_contrail() {
 
                 # install contrail modules
                 echo "Installing contrail modules"
-                pip_install --upgrade $(find $CONTRAIL_SRC/build/production -name "*.tar.gz" -print)
+                # (woz@semihalf.com): for debugging purposes production -> debug
+                # pip_install --upgrade $(find $CONTRAIL_SRC/build/production -name "*.tar.gz" -print)
+                pip_install --upgrade $(find $CONTRAIL_SRC/build/debug -name "*.tar.gz" -print)
 
                 # install VIF driver
                 pip_install $CONTRAIL_SRC/build/noarch/nova_contrail_vif/dist/nova_contrail_vif*.tar.gz
