@@ -1292,7 +1292,9 @@ function stop_contrail() {
         fi
     fi
 
-    if !is_freebsd; then
+    if is_freebsd; then
+        :
+    else
         (cd $CONTRAIL_SRC/third_party/zookeeper-3.4.6; ./bin/zkServer.sh stop)
         echo_summary "-----------------------STOPPING CONTRAIL--------------------------"
     fi
