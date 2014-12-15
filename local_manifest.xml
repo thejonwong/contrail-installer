@@ -1,7 +1,9 @@
 <manifest>
 <remote name="semihalf" fetch="ssh://git@github.com/Semihalf/"/>
 <remove-project name="contrail-controller"/>
-<project name="contrail-controller" remote="semihalf" path="controller" revision="review-rebased"/>
+<project name="contrail-controller" remote="semihalf" path="controller" revision="dev-woz"/>
+<remove-project name="contrail-vrouter"/>
+<project name="contrail-vrouter" remote="semihalf" path="vrouter" revision="dev-woz-freebsd-R2.0"/>
 <remove-project name="contrail-nova-vif-driver"/>
 <project name="contrail-nova-vif-driver" remote="semihalf" path="openstack/nova_contrail_vif" revision="freebsd"/>
 </manifest>
