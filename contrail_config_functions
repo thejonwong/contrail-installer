@@ -510,11 +510,14 @@ function _rewrite_ifcfg_file()
     bond=false
     mac=''
     temp_dir_name="/tmp"
+    # (woz@semihalf.com): On FreeBSD it will always be false, since no sysfs
+    # present. Bonding on FreeBSD is done using lagg driver.
+    # Do we need to support it?
     if [[ -d "/sys/class/net/$dev/bonding" ]]; then
         bond=true
     fi
     mac=$(get_Mac $dev)
-    ifcfg_file="/etc/sysconfig/network-scripts/ifcfg-$dev"
+    ifcfg_file="$INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-$dev"
      
     if [[ ! -f $ifcfg_file ]]; then
         ifcfg_file=$temp_dir_name'/ifcfg-'$dev
