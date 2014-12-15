@@ -1018,10 +1018,11 @@ function start_contrail() {
     
     mkdir -p $TOP_DIR/status/contrail/ 
     pid_count=`ls $TOP_DIR/status/contrail/*.pid|wc -l`
-    if [[ $pid_count != 0 ]]; then
+    if [[ $pid_count -ne 0 ]]; then
         echo "contrail is already running to restart use contrail.sh stop and contrail.sh start"
         exit 
     fi
+
     # save screen settings
     SAVED_SCREEN_NAME=$SCREEN_NAME
     SCREEN_NAME="contrail"
