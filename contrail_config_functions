@@ -743,7 +743,7 @@ function fixup_config_files()
         $SERVICE_TOKEN > $INSTALL_PREFIX/etc/contrail/service.token
     fi
     
-    if !is_freebsd; then
+    if is_freebsd; then
         :
     else
         # Disable selinux
