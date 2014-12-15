@@ -1,6 +1,8 @@
 	
 source functions
 
+INSTALL_PREFIX=$(get_install_prefix)
+
 
 function replace_api_server_conf()
 {
@@ -352,7 +354,7 @@ function remove_spaces()
 
 function replace_contrail_compute_conf()
 {
-    file="/etc/contrail/contrail-compute.conf"
+    file="$INSTALL_PREFIX/etc/contrail/contrail-compute.conf"
     if [[ -f $file ]]; then
         rm $file
     fi
@@ -360,12 +362,12 @@ function replace_contrail_compute_conf()
     if [[ $value = "interface found" ]];then
     
         check_replace_value $file "" LOG /var/log/contrail.log
-        check_replace_value $file "" CONFIG /etc/contrail/agent.conf
+        check_replace_value $file "" CONFIG $INSTALL_PREFIX/etc/contrail/agent.conf
         check_replace_value $file "" prog /usr/bin/vnswad
         check_replace_value $file "" kmod vrouter.ko
         check_replace_value $file "" pname vnswad
         check_replace_value $file "" LIBDIR /usr/lib64
-        check_replace_value $file "" VHOST_CFG /etc/sysconfig/network-scripts/ifcfg-vhost0
+        check_replace_value $file "" VHOST_CFG $INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-vhost0
         check_replace_value $file "" VROUTER_LOGFILE --log-file=/var/log/vrouter.log
         check_replace_value $file "" COLLECTOR $COLLECTOR_IP
         check_replace_value $file "" dev $PHYSICAL_INTERFACE
@@ -587,7 +589,7 @@ function get_Mac()
 
 function replace_contrail_vrouter_agent_conf()
 {
-    file="/etc/contrail/contrail-vrouter-agent.conf"
+    file="$INSTALL_PREFIX/etc/contrail/contrail-vrouter-agent.conf"
     
     cidr=$(get_management_ip $PHYSICAL_INTERFACE)/24
     discovery_ip=$CFGM_IP
@@ -654,14 +656,14 @@ function replace_irond_basic_auth_users()
 
 function write_default_pmac()
 {
-    file="/etc/contrail/default_pmac"
+    file="$INSTALL_PREFIX/etc/contrail/default_pmac"
     mac=$(get_Mac)
     echo $mac >> $file
 }
 
 function write_ifcfg-vhost0()
 {
-    file="/etc/contrail/ifcfg-vhost0"
+    file="$INSTALL_PREFIX/etc/contrail/ifcfg-vhost0"
     value=$(check_dev 'vhost0')
     if [[ $value = "interface found" ]];then 
         ip=$(get_management_ip vhost0)
@@ -687,7 +689,7 @@ function write_ifcfg-vhost0()
 
 function write_qemu_conf()
 {
-   file="/etc/libvirt/qemu.conf"
+   file="$INSTALL_PREFIX/etc/libvirt/qemu.conf"
    temp_file="qemu.conf"
    sudo grep -q  ^"cgroup_device_acl" $file
    value=$?
@@ -727,21 +729,23 @@ function fixup_config_files()
 {    
     multi_net=false 
     #roles=${roles:-('config', 'openstack', 'control', 'compute', 'collector', 'webui')}
-    if [[ ! -d "/etc/contrail" ]]; then
-        sudo mkdir -p /etc/contrail
-        sudo chown `whoami` /etc/contrail
+    if [[ ! -d "$INSTALL_PREFIX/etc/contrail" ]]; then
+        sudo mkdir -p $INSTALL_PREFIX/etc/contrail
+        sudo chown `whoami` $INSTALL_PREFIX/etc/contrail
     fi
-    if [[ ! -d "/etc/quantum/plugins/contrail" ]]; then
-        sudo mkdir -p /etc/quantum/plugins/contrail
-        sudo chown `whoami` /etc/quantum/plugins/contrail  
+    if [[ ! -d "$INSTALL_PREFIX/etc/quantum/plugins/contrail" ]]; then
+        sudo mkdir -p $INSTALL_PREFIX/etc/quantum/plugins/contrail
+        sudo chown `whoami` $INSTALL_PREFIX/etc/quantum/plugins/contrail  
     fi
     COMPUTE_IP=$(get_management_ip $PHYSICAL_INTERFACE)
     if [[ -z $SERVICE_TOKEN ]]; then
         SERVICE_TOKEN=$(sudo openssl rand -hex 10) 
-        $SERVICE_TOKEN > /etc/contrail/service.token
+        $SERVICE_TOKEN > $INSTALL_PREFIX/etc/contrail/service.token
     fi
     
     if !is_freebsd; then
+        :
+    else
         # Disable selinux
         sudo sed 's/SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config > config.new
         sudo mv config.new /etc/selinux/config
@@ -749,16 +753,16 @@ function fixup_config_files()
 
         # Disable iptables      
         sudo chkconfig iptables off
-        sudo iptables --flush 
+         sudo iptables --flush 
     fi
     
-    sudo rm /etc/contrail/ctrl-details
-    echo 'SERVICE_TOKEN='$SERVICE_TOKEN >> "/etc/contrail/ctrl-details"
-    echo 'ADMIN_PASSWORD='$ADMIN_PASSWORD >> "/etc/contrail/ctrl-details"
-    echo 'CONTROLLER='$OPENSTACK_IP >> "/etc/contrail/ctrl-details"
-    echo 'QUANTUM='$CFGM_IP >> "/etc/contrail/ctrl-details" 
-    echo 'COMPUTE='$COMPUTE_IP >> "/etc/contrail/ctrl-details"
-    echo 'CONTROLLER_MGMT='$CFGM_IP >> "/etc/contrail/ctrl-details"
+    sudo rm $INSTALL_PREFIX/etc/contrail/ctrl-details
+    echo 'SERVICE_TOKEN='$SERVICE_TOKEN >> "$INSTALL_PREFIX/etc/contrail/ctrl-details"
+    echo 'ADMIN_PASSWORD='$ADMIN_PASSWORD >> "$INSTALL_PREFIX/etc/contrail/ctrl-details"
+    echo 'CONTROLLER='$OPENSTACK_IP >> "$INSTALL_PREFIX/etc/contrail/ctrl-details"
+    echo 'QUANTUM='$CFGM_IP >> "$INSTALL_PREFIX/etc/contrail/ctrl-details" 
+    echo 'COMPUTE='$COMPUTE_IP >> "$INSTALL_PREFIX/etc/contrail/ctrl-details"
+    echo 'CONTROLLER_MGMT='$CFGM_IP >> "$INSTALL_PREFIX/etc/contrail/ctrl-details"
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         REDIS_WEBUI="/etc/contrail/redis-webui.conf"
         if [[ -f /etc/redis/redis.conf ]]; then
@@ -805,38 +809,40 @@ function fixup_config_files()
     i=0 
     if [[ ! multi_net ]]; then
         if [[ $gateway ]]; then
-            echo "GATEWAY=$gateway" >> "/etc/contrail/ifcfg-vhost0"         
+            echo "GATEWAY=$gateway" >> "$INSTALL_PREFIX/etc/contrail/ifcfg-vhost0"         
         fi
         dns_list=()
         dns_list+=$(get_dns_servers $dev)
         for dns in ${dns_list[@]} 
         do
-            echo "DNS$i=$dev" >> "/etc/contrail/ifcfg-vhost0"
+            echo "DNS$i=$dev" >> "$INSTALL_PREFIX/etc/contrail/ifcfg-vhost0"
             i=$((i+1)) 
         done    
         domain_list=$(get_domain_search_list)
         if [[ domain_list ]]; then
-            echo "DOMAIN=$domin_list" >> "/etc/contrail/ifcfg-vhost0"
+            echo "DOMAIN=$domin_list" >> "$INSTALL_PREFIX/etc/contrail/ifcfg-vhost0"
         fi 
     fi
     prsv_cfg=()
     mtu=$(get_if_mtu $dev)
     if [[ $mtu ]]; then
         dcfg='MTU=$mtu'
-        echo "$dcfg \n" >> "/etc/contrail/ifcfg-vhost0"
+        echo "$dcfg \n" >> "$INSTALL_PREFIX/etc/contrail/ifcfg-vhost0"
         prsv_cfg+=(dcfg) 
     fi    
-    sudo mv /etc/contrail/ifcfg-vhost0 /etc/sysconfig/network-scripts/ifcfg-vhost0       
-    if [[ -f "/etc/sysconfig/network-scripts/ifcfg-$dev.rpmsave" ]]; then
-        sudo cp /etc/sysconfig/network-scripts/ifcfg-$dev /etc/sysconfig/network-scripts/ifcfg-$dev.rpmsave   
+    sudo mv $INSTALL_PREFIX/etc/contrail/ifcfg-vhost0 $INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-vhost0       
+    if [[ -f "$INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-$dev.rpmsave" ]]; then
+        sudo cp $INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-$dev $INSTALL_PREFIX/etc/sysconfig/network-scripts/ifcfg-$dev.rpmsave   
     fi
-    _rewrite_ifcfg_file /etc/contrail/ifcfg-$dev $dev $prsv_cfg 
+    _rewrite_ifcfg_file $INSTALL_PREFIX/etc/contrail/ifcfg-$dev $dev $prsv_cfg 
     if [[ multi_net ]]; then
         #migrate_routes $dev
         :
     fi
     
-    if !is_freebsd; then
+    if is_freebsd; then
+        :
+    else
         sudo chkconfig network on 
     fi
 }
