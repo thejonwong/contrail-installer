@@ -986,7 +986,13 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' $INSTALL_PREF
 
 function test_insert_vrouter ()
 {
-    if lsmod | grep -q vrouter; then 
+    if is_freebsd; then
+        local list_kernel_modules=$(kldstat)
+    else
+        local list_kernel_modules=$(lsmod)
+    fi
+
+    if $list_kernel_modules | grep -q vrouter; then
         echo "vrouter module already inserted."
     else
         insert_vrouter
