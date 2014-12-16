@@ -968,7 +968,7 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' $INSTALL_PREF
         mask=$(get_Mask $dev)
         broadcast=$(get_broadcast $dev)
         dns_ips=$(get_dns_servers)
-        gateway=$(get_gateway)
+        gateway=$(find_gateway $dev)
         resolv_conf=$(mktemp resolv.conf.XXX)
         cp /etc/resolv.conf $resolv_conf
 
