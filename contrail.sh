@@ -963,24 +963,37 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' $INSTALL_PREF
         echo "Sleeping 10 seconds to allow link state to settle"
         sleep 10
         sudo ifup -i /tmp/interfaces $dev
+    elif is_freebsd; then
+        ip=$(get_management_ip $dev)
+        mask=$(get_Mask $dev)
+        broadcast=$(get_broadcast $dev)
+        dns_ips=$(get_dns_servers)
+        gateway=$(get_gateway)
+        resolv_conf=$(mktemp resolv.conf.XXX)
+        cp /etc/resolv.conf $resolv_conf
+
+        echo "Removing address from $dev"
+        sudo ifconfig $dev inet 0.0.0.0
+        sleep 5
+
+        echo "Configuring $DEVICE"
+        sudo ifconfig $DEVICE inet $ip netmask $mask broadcast $broadcast
+        sudo ifconfig $DEVICE up
+        sleep 5
+        sudo ifconfig $dev up
+        sudo route add default $gateway
+
+        echo "Restoring resolv.conf"
+        sudo cp $resolv_conf /etc/resolv.conf
+        rm -f $resolv_conf
     else
         echo "Sleeping 10 seconds to allow link state to settle"
-        if is_freebsd; then
-            sudo ifconfig $DEVICE up
-        else
-            sudo ifup $DEVICE
-        fi
+        sudo ifup $DEVICE
+
         sudo cp $INSTALL_PREFIX/etc/contrail/ifcfg-$dev $INSTALL_PREFIX/etc/sysconfig/network-scripts
         sleep 10
         echo "Restarting network service"
-        if is_freebsd; then
-            # sudo service netif restart
-            # sudo service routing restart
-            restart_service netif
-            restart_service routing
-        else
-            sudo service network restart
-        fi
+        sudo service network restart
     fi
 }
 

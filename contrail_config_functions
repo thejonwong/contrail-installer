@@ -421,6 +421,19 @@ function find_gateway()
 
 }
 
+function get_broadcast()
+{
+    interface=$1
+
+    if is_freebsd; then
+        broadcast=$(sudo ifconfig $interface | awk '/[[:space:]]+inet (.*) netmask (.*) broadcast (.*)$/ { print $6 }')
+    else
+        broadcast=$(sudo ifconfig $interface | grep Bcast | awk '{print $3}' | awk 'BEGIN{FS=":"}{print $2}')
+    fi
+
+    echo $broadcast
+}
+
 function get_Mask()
 {
     interface=$1
