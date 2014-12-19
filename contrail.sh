@@ -1304,6 +1304,10 @@ function clean_contrail() {
 }
 
 function stop_contrail() {
+    source contrail_config_functions
+    source $INSTALL_PREFIX/etc/contrail/contrail-compute.conf
+
+    DEVICE=vhost0
     SAVED_SCREEN_NAME=$SCREEN_NAME
     SCREEN_NAME="contrail"
     SCREEN=$(which screen)
@@ -1318,8 +1322,8 @@ function stop_contrail() {
         :
     else
         (cd $CONTRAIL_SRC/third_party/zookeeper-3.4.6; ./bin/zkServer.sh stop)
-        echo_summary "-----------------------STOPPING CONTRAIL--------------------------"
     fi
+    echo_summary "-----------------------STOPPING CONTRAIL--------------------------"
 
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         screen_stop redis
@@ -1338,8 +1342,8 @@ function stop_contrail() {
         screen_stop ui-jobs
         screen_stop ui-webs
     fi
-    screen_stop agent  
-    rm $CONTRAIL_DIR/status/contrail/*.failure /dev/null 2>&1
+    screen_stop agent
+    rm $TOP_DIR/status/contrail/*.failure >> /dev/null 2>&1
     if is_freebsd; then
         cmd=$(kldstat | grep vrouter)
     else
@@ -1347,7 +1351,24 @@ function stop_contrail() {
     fi
     if [ $? == 0 ]; then
         if is_freebsd; then
+            echo "Restoring $DEVICE settings to $dev interface before removing kernel module"
+            ip=$(get_management_ip $DEVICE)
+            mask=$(get_Mask $DEVICE)
+            broadcast=$(get_broadcast $DEVICE)
+            dns_ips=$(get_dns_servers)
+            gateway=$(find_gateway $DEVICE)
+            resolv_conf=$(mktemp resolv.conf.XXX)
+            cp /etc/resolv.conf $resolv_conf
+
             cmd=$(sudo kldunload vrouter)
+
+            sudo ifconfig $dev inet $ip netmask $mask broadcast $broadcast
+            sudo route add default $gateway
+            sudo ifconfig $dev up
+
+            echo "Restoring resolv.conf"
+            sudo cp $resolv_conf /etc/resolv.conf
+            rm -f $resolv_conf
         else
             cmd=$(sudo rmmod vrouter)
         fi
@@ -1374,6 +1395,7 @@ function stop_contrail() {
             sudo tunctl -d vgw
         fi
     fi
+
     # restore saved screen settings
     SCREEN_NAME=$SAVED_SCREEN_NAME
     return
